@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VaultMail - Gestor seguro de cuentas</title>
+    <link rel="icon" type="image/png" href="Assets/Logo VaultMail.png" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-container">
+        <div class="logo-section">
+          <div class="logo">
+            <img
+              src="Assets/Logo VaultMail.png"
+              alt="VaultMail Logo"
+              class="logo-img"
+            />
+          </div>
+          <div class="logo-text">
+            <h1>VaultMail</h1>
+            <p>Gestor seguro de cuentas</p>
+          </div>
+        </div>
+        <div class="header-spacer"></div>
+        <button class="help-btn" id="helpBtn" title="Ayuda e información">
+          <i class="bi bi-question-circle"></i>
+        </button>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Abrir menú">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Navegación</h3>
+        <div class="sidebar-header-buttons">
+          <button
+            class="sidebar-collapse-btn"
+            id="sidebarCollapseBtn"
+            title="Colapsar sidebar"
+          >
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button class="sidebar-close" id="sidebarClose">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-content">
+        <!-- Navigation Section -->
+        <div class="sidebar-section">
+          <nav class="sidebar-nav">
+            <button
+              class="sidebar-nav-item active"
+              data-view="all"
+              title="Ver todas las cuentas"
+            >
+              <i class="bi bi-inbox"></i>
+              <span>Todas las cuentas</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-view="favorites"
+              title="Ver solo favoritas"
+            >
+              <i class="bi bi-star-fill"></i>
+              <span>Favoritas</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-view="inactive"
+              title="Ver archivadas"
+            >
+              <i class="bi bi-archive"></i>
+              <span>Archivadas</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="sidebar-section">
+          <h4 class="sidebar-section-title">Categorías</h4>
+          <nav class="sidebar-nav">
+            <button class="sidebar-nav-item" data-category="personal">
+              <i class="bi bi-person"></i>
+              <span>Personal</span>
+            </button>
+            <button class="sidebar-nav-item" data-category="trabajo">
+              <i class="bi bi-briefcase"></i>
+              <span>Trabajo</span>
+            </button>
+            <button class="sidebar-nav-item" data-category="redes-sociales">
+              <i class="bi bi-share"></i>
+              <span>Redes Sociales</span>
+            </button>
+            <button class="sidebar-nav-item" data-category="compras">
+              <i class="bi bi-bag"></i>
+              <span>Compras</span>
+            </button>
+            <button class="sidebar-nav-item" data-category="otros">
+              <i class="bi bi-folder"></i>
+              <span>Otros</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="sidebar-section">
+          <h4 class="sidebar-section-title">Estadísticas</h4>
+          <div class="sidebar-stats">
+            <div class="sidebar-stat">
+              <div class="sidebar-stat-value" id="sidebarTotalAccounts">0</div>
+              <div class="sidebar-stat-label">Total</div>
+            </div>
+            <div class="sidebar-stat">
+              <div class="sidebar-stat-value" id="sidebarActiveAccounts">0</div>
+              <div class="sidebar-stat-label">En uso</div>
+            </div>
+            <div class="sidebar-stat">
+              <div class="sidebar-stat-value" id="sidebarFavoritesCount">0</div>
+              <div class="sidebar-stat-label">Favoritas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider between Statistics and Actions -->
+        <div class="sidebar-section-divider"></div>
+
+        <!-- Actions Section -->
+        <div class="sidebar-section">
+          <h4 class="sidebar-section-title">Acciones</h4>
+          <nav class="sidebar-nav">
+            <button class="sidebar-nav-item" id="sidebarNewAccountBtn">
+              <i class="bi bi-plus-circle"></i>
+              <span>Nueva Cuenta</span>
+            </button>
+            <button class="sidebar-nav-item" id="sidebarExportBtn">
+              <i class="bi bi-download"></i>
+              <span>Exportar</span>
+            </button>
+            <button class="sidebar-nav-item" id="sidebarImportBtn">
+              <i class="bi bi-upload"></i>
+              <span>Importar</span>
+            </button>
+            <button class="sidebar-nav-item" id="sidebarHelpBtn">
+              <i class="bi bi-question-circle"></i>
+              <span>Centro de Ayuda</span>
+            </button>
+          </nav>
+          <div class="sidebar-actions-divider"></div>
+          <button
+            class="theme-toggle-sidebar"
+            id="themeToggleSidebar"
+            title="Cambiar tema"
+          >
+            <i class="bi bi-moon"></i>
+            <span>Cambiar Tema</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <span class="sidebar-footer-text">VaultMail © 2025</span>
+      </div>
+    </aside>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="page-title">
+        <h2>Mis Cuentas</h2>
+        <p>Organiza y administra tus cuentas de forma segura</p>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="search-section">
+        <div class="search-bar">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Buscar por email o notas..."
+          />
+          <button
+            type="button"
+            class="btn-clear-search"
+            id="clearSearchBtn"
+            style="display: none"
+          >
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+        <div class="filters">
+          <select id="categoryFilter" class="filter-select">
+            <option value="">Todas las categorías</option>
+            <option value="personal">Personal</option>
+            <option value="trabajo">Trabajo</option>
+            <option value="redes-sociales">Redes Sociales</option>
+            <option value="compras">Compras</option>
+            <option value="otros">Otros</option>
+          </select>
+          <select id="statusFilter" class="filter-select">
+            <option value="">Todos los estados</option>
+            <option value="activa">En uso</option>
+            <option value="inactiva">En desuso</option>
+          </select>
+          <button class="btn btn-primary" id="newAccountBtn">
+            <span>+</span> Nueva Cuenta
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalAccounts">0</div>
+          <div class="stat-label">Total de cuentas</div>
+        </div>
+        <div class="stat-card stat-card-active">
+          <div class="stat-value" id="activeAccounts">0</div>
+          <div class="stat-label">En uso</div>
+        </div>
+        <div class="stat-card stat-card-inactive">
+          <div class="stat-value" id="inactiveAccounts">0</div>
+          <div class="stat-label">En desuso</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalCategories">5</div>
+          <div class="stat-label">Categorías</div>
+        </div>
+      </div>
+
+      <!-- View Controls Bar -->
+      <div class="view-controls-bar">
+        <div class="view-controls-left">
+          <button
+            class="btn btn-control"
+            id="toggleViewBtn"
+            title="Cambiar vista"
+          >
+            <i class="bi bi-grid-3x3"></i>
+            <span>Vista Cards</span>
+          </button>
+          <button
+            class="btn btn-control"
+            id="showFavoritesBtn"
+            title="Mostrar solo favoritos"
+          >
+            <i class="bi bi-star"></i>
+            <span>Favoritos</span>
+          </button>
+          <button
+            class="btn btn-control"
+            id="togglePasswordVisibilityBtn"
+            title="Mostrar/Ocultar contraseñas"
+          >
+            <i class="bi bi-eye"></i>
+            <span>Ver Contraseñas</span>
+          </button>
+          <button
+            class="btn btn-control"
+            id="showArchivedBtn"
+            title="Mostrar cuentas archivadas"
+          >
+            <i class="bi bi-archive"></i>
+            <span>Archivadas</span>
+          </button>
+        </div>
+        <div class="view-controls-right">
+          <button
+            class="btn btn-control"
+            id="exportBtn"
+            title="Exportar cuentas"
+          >
+            <i class="bi bi-download"></i>
+            <span>Exportar</span>
+          </button>
+          <button
+            class="btn btn-control"
+            id="importBtn"
+            title="Importar cuentas"
+          >
+            <i class="bi bi-upload"></i>
+            <span>Importar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Accounts Container -->
+      <div class="accounts-container" id="accountsContainer">
+        <div class="empty-state card">
+          <div class="empty-state-content">
+            <i class="bi bi-envelope-heart empty-state-icon"></i>
+            <h3>No hay cuentas guardadas</h3>
+            <p>Comienza agregando tu primera cuenta de Gmail</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Floating Button to Top -->
+    <button class="btn-floating-top" id="scrollToTopBtn" title="Ir al inicio">
+      <i class="bi bi-arrow-up-short"></i>
+    </button>
+
+    <!-- Hidden file input for import -->
+    <input
+      type="file"
+      id="importFileInput"
+      accept=".json"
+      style="display: none"
+    />
+
+    <!-- Modal para nueva cuenta -->
+    <div class="modal" id="accountModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2>Agregar Nueva Cuenta</h2>
+            <p class="modal-description">
+              Completa los datos de tu cuenta de Gmail
+            </p>
+          </div>
+          <button class="modal-close" id="closeModal">&times;</button>
+        </div>
+        <form id="accountForm">
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input
+              type="email"
+              id="email"
+              required
+              placeholder="tu-email@gmail.com"
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input
+              type="password"
+              id="password"
+              required
+              placeholder="••••••••"
+            />
+          </div>
+          <div class="form-group">
+            <label for="notes">Notas (opcional)</label>
+            <textarea
+              id="notes"
+              placeholder="Agrega notas sobre esta cuenta..."
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="category">Categoría</label>
+            <select id="category" required>
+              <option value="">Selecciona una categoría</option>
+              <option value="personal">Personal</option>
+              <option value="trabajo">Trabajo</option>
+              <option value="redes-sociales">Redes Sociales</option>
+              <option value="compras">Compras</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+          <div class="form-group form-group-checkbox">
+            <label>
+              <input type="checkbox" id="status" checked />
+              <span>Cuenta en uso</span>
+            </label>
+          </div>
+          <div class="form-group" id="inactiveUntilGroup" style="display: none">
+            <label for="inactiveUntil">En desuso hasta (opcional)</label>
+            <input
+              type="date"
+              id="inactiveUntil"
+              placeholder="Selecciona una fecha"
+            />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancelBtn">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Guardar Cuenta
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para ver cuenta -->
+    <div class="modal" id="viewModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Detalles de la Cuenta</h2>
+          <button class="modal-close" id="closeViewModal">&times;</button>
+        </div>
+        <div id="viewAccountContent"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="deleteBtn">
+            Eliminar
+          </button>
+          <button type="button" class="btn btn-primary" id="editBtn">
+            Guardar Cambios
+          </button>
+          <button type="button" class="btn btn-secondary" id="closeViewBtn">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para ayuda e información -->
+    <div class="modal" id="helpModal">
+      <div class="modal-content modal-help">
+        <div class="modal-header">
+          <h2>Centro de Ayuda</h2>
+          <button class="modal-close" id="closeHelpModal">&times;</button>
+        </div>
+        <div class="help-content">
+          <!-- Tabs for help sections -->
+          <div class="help-tabs">
+            <button class="help-tab-btn active" data-tab="inicio">
+              <i class="bi bi-house"></i> Inicio
+            </button>
+            <button class="help-tab-btn" data-tab="caracteristicas">
+              <i class="bi bi-star"></i> Características
+            </button>
+            <button class="help-tab-btn" data-tab="atajos">
+              <i class="bi bi-keyboard"></i> Atajos
+            </button>
+            <button class="help-tab-btn" data-tab="privacidad">
+              <i class="bi bi-shield-lock"></i> Privacidad
+            </button>
+            <button class="help-tab-btn" data-tab="preguntas">
+              <i class="bi bi-chat-dots"></i> Preguntas
+            </button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="help-tab-content">
+            <!-- Inicio -->
+            <div class="help-section active" data-section="inicio">
+              <h3>Bienvenido a VaultMail</h3>
+              <p>
+                VaultMail es un gestor seguro de cuentas de Gmail diseñado para
+                ayudarte a organizar y administrar todas tus cuentas de correo
+                en un solo lugar.
+              </p>
+              <div class="help-box">
+                <h4>¿Cómo comenzar?</h4>
+                <ol>
+                  <li>
+                    Haz clic en <strong>"+ Nueva Cuenta"</strong> para agregar
+                    tu primera cuenta
+                  </li>
+                  <li>Completa los datos: correo, contraseña y categoría</li>
+                  <li>Tus datos se guardan automáticamente en tu navegador</li>
+                  <li>Organiza tus cuentas usando categorías y favoritos</li>
+                </ol>
+              </div>
+            </div>
+
+            <!-- Características -->
+            <div class="help-section" data-section="caracteristicas">
+              <h3>Características Principales</h3>
+              <div class="help-feature">
+                <h4><i class="bi bi-folder"></i> Categorización</h4>
+                <p>
+                  Organiza tus cuentas en 5 categorías: Personal, Trabajo, Redes
+                  Sociales, Compras y Otros.
+                </p>
+              </div>
+              <div class="help-feature">
+                <h4><i class="bi bi-star-fill"></i> Favoritos</h4>
+                <p>
+                  Marca tus cuentas más usadas como favoritas para acceder
+                  rápidamente a ellas.
+                </p>
+              </div>
+              <div class="help-feature">
+                <h4><i class="bi bi-search"></i> Búsqueda y Filtros</h4>
+                <p>
+                  Busca cuentas por correo o notas, filtra por categoría y
+                  estado de uso.
+                </p>
+              </div>
+              <div class="help-feature">
+                <h4><i class="bi bi-archive"></i> Archivado</h4>
+                <p>
+                  Archiva cuentas que no usas frecuentemente sin eliminarlas.
+                </p>
+              </div>
+              <div class="help-feature">
+                <h4><i class="bi bi-download"></i> Exportar/Importar</h4>
+                <p>
+                  Descarga tus datos como JSON o importa cuentas desde un
+                  archivo.
+                </p>
+              </div>
+              <div class="help-feature">
+                <h4><i class="bi bi-sun"></i> Tema Claro/Oscuro</h4>
+                <p>
+                  Cambia entre modo claro y oscuro para mayor comodidad visual.
+                </p>
+              </div>
+            </div>
+
+            <!-- Atajos de Teclado -->
+            <div class="help-section" data-section="atajos">
+              <h3>Atajos de Teclado</h3>
+              <p>Usa estos atajos para navegar más rápidamente:</p>
+              <div class="shortcuts-table">
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + A</div>
+                  <div class="shortcut-desc">Agregar nueva cuenta</div>
+                </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + B</div>
+                  <div class="shortcut-desc">Expandir/Comprimir sidebar</div>
+                </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + K</div>
+                  <div class="shortcut-desc">Enfoca la barra de búsqueda</div>
+                </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + T</div>
+                  <div class="shortcut-desc">Cambiar tema</div>
+                </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + F</div>
+                  <div class="shortcut-desc">Mostrar solo favoritos</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Privacidad -->
+            <div class="help-section" data-section="privacidad">
+              <h3>Privacidad y Seguridad</h3>
+              <div class="help-box">
+                <h4>🔒 Almacenamiento Local</h4>
+                <p>
+                  Todos tus datos se guardan en el almacenamiento local de tu
+                  navegador. <strong>Nunca se envían a ningún servidor.</strong>
+                </p>
+              </div>
+              <div class="help-box">
+                <h4>⚠️ Importante</h4>
+                <ul>
+                  <li>
+                    Tus datos se eliminan si limpias el almacenamiento del
+                    navegador
+                  </li>
+                  <li>
+                    Realiza copias de seguridad regularmente usando la función
+                    "Exportar"
+                  </li>
+                  <li>
+                    No compartas tu navegador con otras personas si almacenas
+                    datos sensibles
+                  </li>
+                  <li>
+                    VaultMail solo funciona en el dispositivo donde lo instales
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Preguntas Frecuentes -->
+            <div class="help-section" data-section="preguntas">
+              <h3>Preguntas Frecuentes</h3>
+              <div class="help-box">
+                <h4>¿Dónde se guardan mis datos?</h4>
+                <p>
+                  Se guardan en el almacenamiento local de tu navegador
+                  (localStorage). No se envían a ningún servidor externo.
+                </p>
+              </div>
+              <div class="help-box">
+                <h4>¿Puedo exportar mis cuentas?</h4>
+                <p>
+                  Sí, haz clic en el botón "Exportar" para descargar un archivo
+                  JSON con todas tus cuentas.
+                </p>
+              </div>
+              <div class="help-box">
+                <h4>¿Qué pasa si pierdo mis datos?</h4>
+                <p>
+                  Si limpias el caché o datos del navegador, perderás toda la
+                  información. Realiza copias de seguridad regularmente.
+                </p>
+              </div>
+              <div class="help-box">
+                <h4>¿Cómo importo cuentas desde un archivo?</h4>
+                <p>
+                  Haz clic en "Importar" y selecciona un archivo JSON
+                  previamente exportado.
+                </p>
+              </div>
+              <div class="help-box">
+                <h4>¿Qué tipos de categorías hay?</h4>
+                <p>
+                  Personal, Trabajo, Redes Sociales, Compras y Otros. Puedes
+                  organizarte por categoría.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>VaultMail</h3>
+            <p>
+              Organiza y administra tus cuentas de Gmail de forma segura con
+              VaultMail. Todos los datos se guardan localmente en tu navegador.
+            </p>
+          </div>
+          <div class="footer-section">
+            <h4>Características</h4>
+            <ul>
+              <li>Almacenamiento seguro local</li>
+              <li>Categorización de cuentas</li>
+              <li>Búsqueda y filtros avanzados</li>
+              <li>Gestión de estado de uso</li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Privacidad</h4>
+            <p>
+              Esta aplicación no envía datos a ningún servidor. Todo permanece
+              en tu dispositivo.
+            </p>
+            <div class="footer-icons">
+              <a href="#" aria-label="GitHub" title="GitHub">
+                <i class="bi bi-github"></i>
+              </a>
+              <a href="#" aria-label="Twitter" title="Twitter">
+                <i class="bi bi-twitter"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 VaultMail. Todos los derechos reservados.</p>
+          <p>
+            Creado por
+            <a
+              href="https://nexcore-gamma.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Nexcore</a
+            >
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>
