@@ -6,7 +6,7 @@
     <title>VaultMail - Gestor seguro de cuentas</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail.svg" />
+    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail - Favicon.webp" />
 
     <!-- Bootstrap CSS -->
     <link
@@ -28,44 +28,86 @@
   </head>
 
   <body>
-    <!-- Modal de Login -->
-    <div
-      class="modal fade"
-      id="loginModal"
-      tabindex="-1"
-      data-bs-backdrop="static"
-      data-bs-keyboard="false"
-    >
-      <div class="modal-dialog modal-dialog-centered login-modal-dialog">
-        <div class="modal-content login-modal-content">
-          <div class="login-container">
-            <div class="login-header">
-              <div class="login-logo-wrapper">
-                <img
-                  src="Assets/Logo VaultMail.png"
-                  alt="VaultMail Logo"
-                  class="login-logo"
-                />
+    <!-- Pantalla de Login Fullscreen -->
+    <!-- Pantalla de Acceso Concedido -->
+    <div id="successScreen" class="success-screen d-none">
+      <div class="success-screen-content">
+        <div class="success-screen-icon">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <h1 class="success-screen-title">¡Acceso Concedido!</h1>
+        <p class="success-screen-message">
+          Tu sesión se ha iniciado correctamente
+        </p>
+        <div class="success-screen-loader">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla de Login Fullscreen -->
+    <div id="loginScreen" class="login-screen d-none">
+      <div class="login-screen-container">
+        <!-- Columna izquierda (solo en PC) / Parte superior en mobile con logo -->
+        <div class="login-screen-left">
+          <div class="login-screen-left-content">
+            <!-- Logo para mobile (se muestra con CSS en mobile) -->
+            <div class="login-screen-logo-wrapper">
+              <img
+                src="Assets/Logo VaultMail.png"
+                alt="VaultMail Logo"
+                class="login-screen-logo"
+              />
+            </div>
+            <!-- Texto solo en PC -->
+            <h2 class="login-screen-tagline">VaultMail</h2>
+            <p class="login-screen-description">
+              Almacena y gestiona tus contraseñas de forma segura en un único
+              lugar
+            </p>
+            <div class="login-screen-features">
+              <div class="feature-item">
+                <i class="bi bi-shield-lock"></i>
+                <span>Encriptación 256-bit</span>
               </div>
-              <h1 class="login-title">VaultMail</h1>
-              <p class="login-subtitle">Gestor seguro de cuentas</p>
+              <div class="feature-item">
+                <i class="bi bi-lock"></i>
+                <span>Acceso seguro</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-cloud-check"></i>
+                <span>Sincronización automática</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha (formulario) -->
+        <div class="login-screen-right">
+          <div class="login-screen-form-wrapper">
+            <div class="login-screen-header">
+              <h1 class="login-screen-title">Login</h1>
+              <p class="login-screen-subtitle">Gestor seguro de cuentas</p>
             </div>
 
-            <form id="loginForm" class="login-form">
-              <div class="login-form-group">
-                <label for="loginPassword" class="login-label"
-                  >Contraseña de acceso</label
+            <form id="loginForm" class="login-screen-form">
+              <div class="login-screen-form-group">
+                <label for="loginPassword" class="login-screen-label"
+                  >Contraseña</label
                 >
-                <div class="login-input-group">
+                <div class="login-screen-input-group">
                   <input
                     type="password"
-                    class="login-input"
+                    class="login-screen-input"
                     id="loginPassword"
                     placeholder="••••••••"
                     required
+                    autofocus
                   />
                   <button
-                    class="login-input-toggle"
+                    class="login-screen-input-toggle"
                     type="button"
                     id="toggleLoginPassword"
                     tabindex="-1"
@@ -73,20 +115,64 @@
                     <i class="bi bi-eye"></i>
                   </button>
                 </div>
-                <small class="login-helper-text">
+                <div class="login-screen-password-strength d-none">
+                  <div class="strength-bar">
+                    <div class="strength-fill" id="strengthFill"></div>
+                  </div>
+                  <small class="strength-text" id="strengthText"></small>
+                </div>
+                <small class="login-screen-helper-text">
                   Introduce tu contraseña para acceder
                 </small>
               </div>
 
-              <button type="submit" class="login-btn-submit">Acceder</button>
+              <button type="submit" class="login-screen-btn-submit">
+                <span class="btn-text">Acceder</span>
+                <i class="bi bi-arrow-right"></i>
+              </button>
 
               <div
                 id="loginError"
-                class="login-alert login-alert-error d-none"
+                class="login-screen-alert login-screen-alert-error d-none"
                 role="alert"
               ></div>
             </form>
+
+            <div class="login-screen-footer">
+              <p class="login-screen-info">
+                <i class="bi bi-info-circle"></i>
+                Tu contraseña no se almacena en servidores
+              </p>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmación de Logout -->
+    <div id="logoutConfirmModal" class="modal-logout d-none">
+      <div class="modal-logout-overlay"></div>
+      <div class="modal-logout-content">
+        <div class="modal-logout-icon">
+          <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <h2 class="modal-logout-title">¿Cerrar Sesión?</h2>
+        <p class="modal-logout-message">
+          Tu sesión será cerrada y tendrás que iniciar sesión nuevamente
+        </p>
+        <div class="modal-logout-actions">
+          <button
+            class="modal-logout-btn modal-logout-cancel"
+            id="cancelLogoutBtn"
+          >
+            Cancelar
+          </button>
+          <button
+            class="modal-logout-btn modal-logout-confirm"
+            id="confirmLogoutBtn"
+          >
+            Cerrar Sesión
+          </button>
         </div>
       </div>
     </div>
@@ -108,8 +194,9 @@
           </div>
         </div>
         <div class="header-spacer"></div>
-        <button class="help-btn" id="helpBtn" title="Ayuda e información">
-          <i class="bi bi-question-circle"></i>
+        <button class="logout-btn" id="logoutBtn" title="Cerrar sesión">
+          <i class="bi bi-door-open"></i>
+          <span class="logout-text">Cerrar sesión</span>
         </button>
         <button class="sidebar-toggle" id="sidebarToggle" title="Abrir menú">
           <i class="bi bi-list"></i>
@@ -359,6 +446,9 @@
             id="searchInput"
             placeholder="Buscar por email o notas..."
           />
+          <div class="search-bar-hint" id="searchBarHint">
+            <kbd>Ctrl+K</kbd>
+          </div>
           <button
             type="button"
             class="btn-clear-search"
@@ -465,12 +555,14 @@
       </div>
 
       <!-- Accounts Container -->
-      <div class="accounts-container" id="accountsContainer">
-        <div class="empty-state card">
-          <div class="empty-state-content">
-            <i class="bi bi-envelope-heart empty-state-icon"></i>
-            <h3>No hay cuentas guardadas</h3>
-            <p>Comienza agregando tu primera cuenta de Gmail</p>
+      <div class="accounts-wrapper" id="accountsWrapper">
+        <div class="accounts-container" id="accountsContainer">
+          <div class="empty-state card">
+            <div class="empty-state-content">
+              <i class="bi bi-envelope-heart empty-state-icon"></i>
+              <h3>No hay cuentas guardadas</h3>
+              <p>Comienza agregando tu primera cuenta de Gmail</p>
+            </div>
           </div>
         </div>
       </div>
@@ -940,25 +1032,35 @@
               <p>Usa estos atajos para navegar más rápidamente:</p>
               <div class="shortcuts-table">
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + Alt + A</div>
+                  <div class="shortcut-keys">Ctrl + A</div>
                   <div class="shortcut-desc">Agregar nueva cuenta</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + Alt + B</div>
+                  <div class="shortcut-keys">Ctrl + B</div>
                   <div class="shortcut-desc">Expandir/Comprimir sidebar</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + Alt + K</div>
+                  <div class="shortcut-keys">Ctrl + K</div>
                   <div class="shortcut-desc">Enfoca la barra de búsqueda</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + Alt + T</div>
-                  <div class="shortcut-desc">Cambiar tema</div>
+                  <div class="shortcut-keys">Ctrl + T</div>
+                  <div class="shortcut-desc">Cambiar tema (claro/oscuro)</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + Alt + F</div>
+                  <div class="shortcut-keys">Ctrl + F</div>
                   <div class="shortcut-desc">Mostrar solo favoritos</div>
                 </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + Alt + ←</div>
+                  <div class="shortcut-desc">Ir a página anterior (paginación)</div>
+                </div>
+                <div class="shortcut-item">
+                  <div class="shortcut-keys">Ctrl + Alt + →</div>
+                  <div class="shortcut-desc">Ir a página siguiente (paginación)</div>
+                </div>
+              </div>
+            </div>
               </div>
             </div>
 

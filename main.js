@@ -7,6 +7,8 @@ class VaultMail {
         this.showPasswordsGlobally = false;
         this.showOnlyArchived = false;
         this.viewMode = 'cards'; // 'cards' or 'table'
+        this.currentPage = 1;
+        this.itemsPerPage = 6;
         this.initAuth();
     }
 
@@ -21,49 +23,120 @@ class VaultMail {
     }
 
     showLoginModal() {
-        // Show login modal
-        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'), {
-            backdrop: 'static',
-            keyboard: false
-        });
-        loginModal.show();
+        // Show login screen fullscreen
+        const loginScreen = document.getElementById('loginScreen');
+        loginScreen.classList.remove('d-none');
+        
+        // Ocultar scrollbar del body
+        document.body.style.overflow = 'hidden';
 
         // Setup login form
         document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
         
         // Toggle password visibility
-        document.getElementById('toggleLoginPassword').addEventListener('click', () => {
+        document.getElementById('toggleLoginPassword').addEventListener('click', (e) => {
+            e.preventDefault();
             const passwordInput = document.getElementById('loginPassword');
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
         });
+
+        // Password strength indicator
+        document.getElementById('loginPassword').addEventListener('input', (e) => {
+            this.updatePasswordStrength(e.target.value);
+        });
+        
+        // Focus on password input
+        document.getElementById('loginPassword').focus();
+    }
+
+    updatePasswordStrength(password) {
+        const strengthContainer = document.querySelector('.login-screen-password-strength');
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+
+        if (password.length === 0) {
+            strengthContainer.classList.add('d-none');
+            return;
+        }
+
+        strengthContainer.classList.remove('d-none');
+
+        // Calculate strength
+        let strength = 0;
+        let strengthLabel = 'Débil';
+        let strengthClass = 'weak';
+
+        if (password.length >= 6) strength++;
+        if (password.length >= 10) strength++;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+        if (strength <= 2) {
+            strengthLabel = 'Débil';
+            strengthClass = 'weak';
+        } else if (strength <= 3) {
+            strengthLabel = 'Regular';
+            strengthClass = 'fair';
+        } else {
+            strengthLabel = 'Fuerte';
+            strengthClass = 'good';
+        }
+
+        // Update UI
+        strengthFill.className = `strength-fill ${strengthClass}`;
+        strengthText.textContent = `Seguridad: ${strengthLabel}`;
     }
 
     handleLogin(e) {
         e.preventDefault();
         const password = document.getElementById('loginPassword').value;
         const storedPassword = localStorage.getItem('vaultmail_master_password');
+        const submitBtn = document.querySelector('.login-screen-btn-submit');
         
+        // Disable button during loading
+        submitBtn.disabled = true;
+        
+        // Quick validation
         if (!storedPassword) {
             // First login - set master password
             localStorage.setItem('vaultmail_master_password', this.hashPassword(password));
             sessionStorage.setItem('vaultmail_authenticated', 'true');
             document.getElementById('loginForm').reset();
-            bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-            this.init();
+            this.accessDashboard();
         } else {
             // Verify password
             if (this.verifyPassword(password, storedPassword)) {
                 sessionStorage.setItem('vaultmail_authenticated', 'true');
                 document.getElementById('loginForm').reset();
                 document.getElementById('loginError').classList.add('d-none');
-                bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-                this.init();
+                
+                // Show success message
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = '¡Acceso concedido!';
+                errorDiv.classList.remove('d-none', 'login-screen-alert-error');
+                errorDiv.classList.add('login-screen-alert-success');
+                
+                // Access dashboard after short delay
+                setTimeout(() => {
+                    this.accessDashboard();
+                }, 1000);
             } else {
+                // Re-enable button
+                submitBtn.disabled = false;
+                
                 document.getElementById('loginError').textContent = 'Contraseña incorrecta';
-                document.getElementById('loginError').classList.remove('d-none');
+                document.getElementById('loginError').classList.remove('d-none', 'login-screen-alert-success');
+                document.getElementById('loginError').classList.add('login-screen-alert-error');
             }
         }
+    }
+
+    accessDashboard() {
+        document.getElementById('loginScreen').classList.add('d-none');
+        document.body.style.overflow = 'auto';
+        this.init();
     }
 
     hashPassword(password) {
@@ -151,10 +224,40 @@ class VaultMail {
     }
 
     handleLogout() {
-        if (confirm('¿Está seguro de que desea cerrar sesión?')) {
-            sessionStorage.removeItem('vaultmail_authenticated');
-            window.location.reload();
-        }
+        // Show logout confirmation modal instead of confirm dialog
+        this.showLogoutConfirmModal();
+    }
+
+    showLogoutConfirmModal() {
+        const modal = document.getElementById('logoutConfirmModal');
+        modal.classList.remove('d-none');
+        
+        // Cancel button
+        document.getElementById('cancelLogoutBtn').addEventListener('click', () => {
+            modal.classList.add('d-none');
+        }, { once: true });
+        
+        // Confirm button
+        document.getElementById('confirmLogoutBtn').addEventListener('click', () => {
+            this.performLogout();
+        }, { once: true });
+        
+        // Close on overlay click
+        document.querySelector('.modal-logout-overlay').addEventListener('click', () => {
+            modal.classList.add('d-none');
+        }, { once: true });
+    }
+
+    performLogout() {
+        sessionStorage.removeItem('vaultmail_authenticated');
+        document.getElementById('logoutConfirmModal').classList.add('d-none');
+        document.getElementById('loginScreen').classList.remove('d-none');
+        document.body.style.overflow = 'hidden';
+        this.accounts = [];
+        this.filteredAccounts = [];
+        document.getElementById('accountsContainer').innerHTML = '';
+        document.getElementById('loginPassword').value = '';
+        this.showLoginModal();
     }
 
     init() {
@@ -162,6 +265,7 @@ class VaultMail {
         this.loadAccounts();
         this.checkAndUpdateInactiveAccounts(); // Check on load
         this.setupEventListeners();
+        this.setupKeyboardShortcuts();
         this.loadSidebarState();
         this.renderAccounts();
         this.updateStats();
@@ -236,11 +340,13 @@ class VaultMail {
         // Search and filters
         document.getElementById('searchInput').addEventListener('input', (e) => {
             this.updateClearSearchButton(e.target.value);
+            this.updateSearchBarHint(e.target.value);
             this.filterAccounts();
         });
         document.getElementById('clearSearchBtn').addEventListener('click', () => {
             document.getElementById('searchInput').value = '';
             this.updateClearSearchButton('');
+            this.updateSearchBarHint('');
             this.filterAccounts();
         });
         document.getElementById('categoryFilter').addEventListener('change', () => this.filterAccounts());
@@ -292,8 +398,13 @@ class VaultMail {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+
         // Help modal
-        document.getElementById('helpBtn').addEventListener('click', () => this.openHelpModal());
         document.getElementById('closeHelpModal').addEventListener('click', () => this.closeHelpModal());
 
         // Help tab switching
@@ -316,6 +427,12 @@ class VaultMail {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+    }
+
+    setupKeyboardShortcuts() {
+        // This method initializes keyboard shortcut listeners
+        // Keyboard shortcuts are handled in handleKeyboardShortcuts()
+        // Called from init() to ensure DOM is ready
     }
 
     handleKeyboardShortcuts(e) {
@@ -343,6 +460,16 @@ class VaultMail {
         else if (e.ctrlKey && e.key.toLowerCase() === 'f') {
             e.preventDefault();
             this.toggleShowOnlyFavorites();
+        }
+        // Ctrl+Alt+ArrowLeft: Previous page
+        else if (e.ctrlKey && e.altKey && e.key === 'ArrowLeft') {
+            e.preventDefault();
+            this.navigatePaginationPrevious();
+        }
+        // Ctrl+Alt+ArrowRight: Next page
+        else if (e.ctrlKey && e.altKey && e.key === 'ArrowRight') {
+            e.preventDefault();
+            this.navigatePaginationNext();
         }
     }
 
@@ -545,6 +672,15 @@ class VaultMail {
         }
     }
 
+    updateSearchBarHint(value) {
+        const hint = document.getElementById('searchBarHint');
+        if (value.trim().length > 0) {
+            hint.style.display = 'none';
+        } else {
+            hint.style.display = 'block';
+        }
+    }
+
     filterAccounts() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const categoryFilter = document.getElementById('categoryFilter').value.trim();
@@ -566,6 +702,7 @@ class VaultMail {
     }
 
     renderAccounts() {
+        this.currentPage = 1; // Reset to page 1 when filters change
         const container = document.getElementById('accountsContainer');
         const searchTerm = document.getElementById('searchInput').value.trim();
         const categoryFilter = document.getElementById('categoryFilter').value.trim();
@@ -598,6 +735,12 @@ class VaultMail {
                     </div>
                 </div>
             `;
+            // Remove pagination if empty
+            const wrapper = document.getElementById('accountsWrapper');
+            const existingPagination = wrapper.querySelector('.pagination-container');
+            if (existingPagination) {
+                existingPagination.remove();
+            }
             return;
         }
 
@@ -609,8 +752,36 @@ class VaultMail {
     }
 
     renderCardsView(container, accountsToRender) {
+        const wrapper = document.getElementById('accountsWrapper');
         container.classList.remove('table-view');
-        container.innerHTML = accountsToRender.map(account => this.createAccountCard(account)).join('');
+        
+        // Reset to page 1 if the number of accounts has changed
+        const totalPages = Math.ceil(accountsToRender.length / this.itemsPerPage);
+        if (this.currentPage > totalPages) {
+            this.currentPage = 1;
+        }
+
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const paginatedAccounts = accountsToRender.slice(startIndex, endIndex);
+
+        // Render cards
+        container.innerHTML = paginatedAccounts.map(account => this.createAccountCard(account)).join('');
+        
+        // Remove existing pagination if it exists
+        const existingPagination = wrapper.querySelector('.pagination-container');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        // Add pagination bar if there are multiple pages
+        if (totalPages > 1) {
+            const paginationHtml = this.createPaginationBar(totalPages, this.currentPage);
+            const paginationDiv = document.createElement('div');
+            paginationDiv.innerHTML = paginationHtml;
+            wrapper.appendChild(paginationDiv.firstChild);
+        }
         
         // Add event listeners to cards
         container.querySelectorAll('.account-card').forEach(card => {
@@ -682,10 +853,93 @@ class VaultMail {
                 this.copyToClipboard(text, btn);
             });
         });
+
+        // Add pagination button listeners
+        const paginationBtns = wrapper.querySelectorAll('.pagination-btn');
+        paginationBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const page = parseInt(btn.dataset.page, 10);
+                this.currentPage = page;
+                this.animatePaginationChange(container, accountsToRender);
+            });
+        });
+    }
+
+    createPaginationBar(totalPages, currentPage) {
+        let html = '<div class="pagination-container">';
+        
+        // Previous button
+        if (currentPage > 1) {
+            html += `<button class="pagination-btn pagination-prev" data-page="${currentPage - 1}" title="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>`;
+        } else {
+            html += `<button class="pagination-btn pagination-prev" disabled title="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>`;
+        }
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        // Adjust if we're near the end
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Show first page and dots if needed
+        if (startPage > 1) {
+            html += `<button class="pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) {
+                html += `<span class="pagination-dots">...</span>`;
+            }
+        }
+
+        // Show page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            const isActive = i === currentPage;
+            html += `<button class="pagination-btn ${isActive ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+
+        // Show last page and dots if needed
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<span class="pagination-dots">...</span>`;
+            }
+            html += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        // Next button
+        if (currentPage < totalPages) {
+            html += `<button class="pagination-btn pagination-next" data-page="${currentPage + 1}" title="Página siguiente">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>`;
+        } else {
+            html += `<button class="pagination-btn pagination-next" disabled title="Página siguiente">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>`;
+        }
+
+        html += '</div>';
+        
+        // Add pagination shortcut hint
+        html += '<div class="pagination-shortcut-hint"><small>Usa <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <i class="bi bi-chevron-left"></i> / <i class="bi bi-chevron-right"></i> para navegar</small></div>';
+        
+        return html;
     }
 
     renderTableView(container, accountsToRender) {
+        const wrapper = document.getElementById('accountsWrapper');
         container.classList.add('table-view');
+        
+        // Remove pagination if exists
+        const existingPagination = wrapper.querySelector('.pagination-container');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
         
         const tableHTML = `
             <table class="accounts-table">
@@ -1279,6 +1533,84 @@ class VaultMail {
         }
 
         this.renderAccounts();
+    }
+
+    navigatePaginationNext() {
+        const container = document.getElementById('accountsContainer');
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        const categoryFilter = document.getElementById('categoryFilter').value.trim();
+        const statusFilter = document.getElementById('statusFilter').value.trim();
+        const hasActiveFilters = searchTerm || categoryFilter || statusFilter;
+
+        let accountsToRender = hasActiveFilters ? this.filteredAccounts : this.accounts;
+
+        if (!this.showOnlyArchived) {
+            accountsToRender = accountsToRender.filter(a => !a.isArchived);
+        } else {
+            accountsToRender = accountsToRender.filter(a => a.isArchived);
+        }
+
+        if (this.showOnlyFavorites) {
+            accountsToRender = accountsToRender.filter(a => a.isFavorite);
+        }
+
+        const totalPages = Math.ceil(accountsToRender.length / this.itemsPerPage);
+        
+        if (this.currentPage < totalPages) {
+            this.currentPage++;
+            this.animatePaginationChange(container, accountsToRender);
+        }
+    }
+
+    navigatePaginationPrevious() {
+        const container = document.getElementById('accountsContainer');
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        const categoryFilter = document.getElementById('categoryFilter').value.trim();
+        const statusFilter = document.getElementById('statusFilter').value.trim();
+        const hasActiveFilters = searchTerm || categoryFilter || statusFilter;
+
+        let accountsToRender = hasActiveFilters ? this.filteredAccounts : this.accounts;
+
+        if (!this.showOnlyArchived) {
+            accountsToRender = accountsToRender.filter(a => !a.isArchived);
+        } else {
+            accountsToRender = accountsToRender.filter(a => a.isArchived);
+        }
+
+        if (this.showOnlyFavorites) {
+            accountsToRender = accountsToRender.filter(a => a.isFavorite);
+        }
+
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.animatePaginationChange(container, accountsToRender);
+        }
+    }
+
+    animatePaginationChange(container, accountsToRender) {
+        // Add fade-out animation
+        container.classList.add('pagination-fade-out');
+        
+        // Wait for animation to complete, then render and animate in
+        setTimeout(() => {
+            this.renderCardsView(container, accountsToRender);
+            container.classList.remove('pagination-fade-out');
+            container.classList.add('pagination-fade-in');
+            
+            // Remove fade-in class after animation and scroll to view controls bar
+            setTimeout(() => {
+                container.classList.remove('pagination-fade-in');
+                
+                // Scroll to view controls bar smoothly
+                const viewControlsBar = document.querySelector('.view-controls-bar');
+                if (viewControlsBar) {
+                    viewControlsBar.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
+            }, 300);
+        }, 150);
     }
 
     toggleViewMode() {
