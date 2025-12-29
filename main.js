@@ -7,7 +7,154 @@ class VaultMail {
         this.showPasswordsGlobally = false;
         this.showOnlyArchived = false;
         this.viewMode = 'cards'; // 'cards' or 'table'
-        this.init();
+        this.initAuth();
+    }
+
+    initAuth() {
+        // Check if user is authenticated
+        const isAuthenticated = sessionStorage.getItem('vaultmail_authenticated');
+        if (!isAuthenticated) {
+            this.showLoginModal();
+        } else {
+            this.init();
+        }
+    }
+
+    showLoginModal() {
+        // Show login modal
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+        loginModal.show();
+
+        // Setup login form
+        document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+        
+        // Toggle password visibility
+        document.getElementById('toggleLoginPassword').addEventListener('click', () => {
+            const passwordInput = document.getElementById('loginPassword');
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+        });
+    }
+
+    handleLogin(e) {
+        e.preventDefault();
+        const password = document.getElementById('loginPassword').value;
+        const storedPassword = localStorage.getItem('vaultmail_master_password');
+        
+        if (!storedPassword) {
+            // First login - set master password
+            localStorage.setItem('vaultmail_master_password', this.hashPassword(password));
+            sessionStorage.setItem('vaultmail_authenticated', 'true');
+            document.getElementById('loginForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+            this.init();
+        } else {
+            // Verify password
+            if (this.verifyPassword(password, storedPassword)) {
+                sessionStorage.setItem('vaultmail_authenticated', 'true');
+                document.getElementById('loginForm').reset();
+                document.getElementById('loginError').classList.add('d-none');
+                bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                this.init();
+            } else {
+                document.getElementById('loginError').textContent = 'Contraseña incorrecta';
+                document.getElementById('loginError').classList.remove('d-none');
+            }
+        }
+    }
+
+    hashPassword(password) {
+        // Simple hash using btoa (base64 encoding with a salt)
+        const salt = 'vaultmail_2025';
+        return btoa(password + salt);
+    }
+
+    verifyPassword(password, hashedPassword) {
+        return this.hashPassword(password) === hashedPassword;
+    }
+
+    openChangePasswordModal() {
+        const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+        changePasswordModal.show();
+
+        // Setup toggle password visibility buttons
+        document.getElementById('toggleCurrentPassword').addEventListener('click', () => {
+            const input = document.getElementById('currentPassword');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+
+        document.getElementById('toggleNewPassword').addEventListener('click', () => {
+            const input = document.getElementById('newPassword');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', () => {
+            const input = document.getElementById('confirmPassword');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+
+        document.getElementById('changePasswordSubmitBtn').addEventListener('click', () => this.handleChangePassword());
+    }
+
+    handleChangePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const storedPassword = localStorage.getItem('vaultmail_master_password');
+
+        document.getElementById('changePasswordError').classList.add('d-none');
+        document.getElementById('changePasswordSuccess').classList.add('d-none');
+
+        // Verify current password
+        if (!this.verifyPassword(currentPassword, storedPassword)) {
+            document.getElementById('changePasswordError').textContent = 'La contraseña actual es incorrecta';
+            document.getElementById('changePasswordError').classList.remove('d-none');
+            return;
+        }
+
+        // Check if new password is empty
+        if (!newPassword) {
+            document.getElementById('changePasswordError').textContent = 'La nueva contraseña no puede estar vacía';
+            document.getElementById('changePasswordError').classList.remove('d-none');
+            return;
+        }
+
+        // Check if passwords match
+        if (newPassword !== confirmPassword) {
+            document.getElementById('changePasswordError').textContent = 'Las nuevas contraseñas no coinciden';
+            document.getElementById('changePasswordError').classList.remove('d-none');
+            return;
+        }
+
+        // Check if new password is the same as the old one
+        if (newPassword === currentPassword) {
+            document.getElementById('changePasswordError').textContent = 'La nueva contraseña debe ser diferente a la actual';
+            document.getElementById('changePasswordError').classList.remove('d-none');
+            return;
+        }
+
+        // Update password
+        localStorage.setItem('vaultmail_master_password', this.hashPassword(newPassword));
+
+        // Show success message
+        document.getElementById('changePasswordSuccess').textContent = 'Contraseña cambiada exitosamente';
+        document.getElementById('changePasswordSuccess').classList.remove('d-none');
+
+        // Reset form and close modal after 2 seconds
+        setTimeout(() => {
+            document.getElementById('changePasswordForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+        }, 2000);
+    }
+
+    handleLogout() {
+        if (confirm('¿Está seguro de que desea cerrar sesión?')) {
+            sessionStorage.removeItem('vaultmail_authenticated');
+            window.location.reload();
+        }
     }
 
     init() {
@@ -18,6 +165,7 @@ class VaultMail {
         this.loadSidebarState();
         this.renderAccounts();
         this.updateStats();
+        this.initializeTooltips(); // Initialize tooltips only if sidebar is collapsed
     }
 
     setupEventListeners() {
@@ -39,18 +187,27 @@ class VaultMail {
 
         // Sidebar action buttons
         document.getElementById('sidebarNewAccountBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
             this.openNewAccountModal();
             this.closeSidebar();
         });
+        document.getElementById('sidebarChangePasswordBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
+            this.openChangePasswordModal();
+            this.closeSidebar();
+        });
         document.getElementById('sidebarExportBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
             this.exportAccounts();
             this.closeSidebar();
         });
         document.getElementById('sidebarImportBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
             document.getElementById('importFileInput').click();
             this.closeSidebar();
         });
         document.getElementById('sidebarHelpBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
             this.openHelpModal();
             this.closeSidebar();
         });
@@ -94,7 +251,16 @@ class VaultMail {
         document.getElementById('editBtn').addEventListener('click', () => this.saveViewAccountChanges());
 
         // Theme toggle
-        document.getElementById('themeToggleSidebar').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('themeToggleSidebar').addEventListener('click', () => {
+            this.hideAllTooltips();
+            this.toggleTheme();
+        });
+
+        // Logout button
+        document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
+            this.hideAllTooltips();
+            this.handleLogout();
+        });
 
         // Export/Import buttons
         document.getElementById('exportBtn').addEventListener('click', () => this.exportAccounts());
@@ -310,15 +476,39 @@ class VaultMail {
     }
 
     deleteAccount() {
-        if (confirm('¿Estás seguro de que deseas eliminar esta cuenta?')) {
+        // Show delete confirmation modal
+        const account = this.accounts.find(a => a.id === this.currentEditingId);
+        if (!account) return;
+
+        // Set account name in modal
+        document.getElementById('deleteConfirmAccountName').querySelector('strong').textContent = account.email;
+
+        // Show the confirmation modal
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        deleteModal.show();
+
+        // Handle confirm delete button
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        confirmBtn.onclick = () => {
+            this.performDelete();
+            deleteModal.hide();
+        };
+    }
+
+    performDelete() {
+        this.showSkeletonLoader();
+        
+        // Simulate delete operation with delay
+        setTimeout(() => {
             this.accounts = this.accounts.filter(a => a.id !== this.currentEditingId);
             this.filteredAccounts = this.filteredAccounts.filter(a => a.id !== this.currentEditingId);
             this.saveAccounts();
+            this.hideSkeletonLoader();
             this.renderAccounts();
             this.updateStats();
             this.closeViewModal();
-            this.showNotification('Cuenta eliminada');
-        }
+            this.showNotification('Cuenta eliminada correctamente');
+        }, 600);
     }
 
     editAccount() {
@@ -1167,6 +1357,7 @@ class VaultMail {
     }
 
     handleSidebarViewClick(e) {
+        this.hideAllTooltips();
         const view = e.currentTarget.getAttribute('data-view');
         
         // Update active button in sidebar
@@ -1193,6 +1384,7 @@ class VaultMail {
     }
 
     handleSidebarCategoryClick(e) {
+        this.hideAllTooltips();
         const category = e.currentTarget.getAttribute('data-category');
         const isActive = e.currentTarget.classList.contains('active');
         
@@ -1255,9 +1447,13 @@ class VaultMail {
         if (sidebar.classList.contains('collapsed')) {
             collapseBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
             localStorage.setItem('sidebarCollapsed', 'true');
+            // Enable tooltips when collapsed
+            this.initializeTooltips();
         } else {
             collapseBtn.innerHTML = '<i class="bi bi-chevron-left"></i>';
             localStorage.setItem('sidebarCollapsed', 'false');
+            // Disable tooltips when expanded
+            this.disableTooltips();
         }
     }
 
@@ -1274,6 +1470,67 @@ class VaultMail {
             footer.classList.add('sidebar-collapsed');
             collapseBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
         }
+    }
+
+    initializeTooltips() {
+        const sidebar = document.getElementById('sidebar');
+        // Only initialize tooltips if sidebar is collapsed
+        if (!sidebar.classList.contains('collapsed')) {
+            return;
+        }
+        
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach((tooltipTriggerEl) => {
+            // Destroy existing tooltip if any
+            const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (existingTooltip) {
+                existingTooltip.dispose();
+            }
+            // Create new tooltip
+            new bootstrap.Tooltip(tooltipTriggerEl, {
+                delay: { show: 100, hide: 0 }
+            });
+        });
+    }
+
+    showSkeletonLoader() {
+        const skeletonLoader = document.getElementById('skeletonLoader');
+        const accountsContainer = document.getElementById('accountsContainer');
+        
+        if (skeletonLoader && accountsContainer) {
+            skeletonLoader.style.display = 'grid';
+            accountsContainer.style.display = 'none';
+        }
+    }
+
+    hideSkeletonLoader() {
+        const skeletonLoader = document.getElementById('skeletonLoader');
+        const accountsContainer = document.getElementById('accountsContainer');
+        
+        if (skeletonLoader && accountsContainer) {
+            skeletonLoader.style.display = 'none';
+            accountsContainer.style.display = 'grid';
+        }
+    }
+
+    disableTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach((tooltipTriggerEl) => {
+            const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (tooltip) {
+                tooltip.dispose();
+            }
+        });
+    }
+
+    hideAllTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach((tooltipTriggerEl) => {
+            const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (tooltip) {
+                tooltip.hide();
+            }
+        });
     }
 }
 

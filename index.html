@@ -4,14 +4,93 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VaultMail - Gestor seguro de cuentas</title>
-    <link rel="icon" type="image/png" href="Assets/Logo VaultMail.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail.svg" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="style.css" />
+
+    <!-- Bootstrap Icons -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
     />
+
+    <!-- Popper.js para tooltips -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
   </head>
+
   <body>
+    <!-- Modal de Login -->
+    <div
+      class="modal fade"
+      id="loginModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered login-modal-dialog">
+        <div class="modal-content login-modal-content">
+          <div class="login-container">
+            <div class="login-header">
+              <div class="login-logo-wrapper">
+                <img
+                  src="Assets/Logo VaultMail.png"
+                  alt="VaultMail Logo"
+                  class="login-logo"
+                />
+              </div>
+              <h1 class="login-title">VaultMail</h1>
+              <p class="login-subtitle">Gestor seguro de cuentas</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+              <div class="login-form-group">
+                <label for="loginPassword" class="login-label"
+                  >Contraseña de acceso</label
+                >
+                <div class="login-input-group">
+                  <input
+                    type="password"
+                    class="login-input"
+                    id="loginPassword"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    class="login-input-toggle"
+                    type="button"
+                    id="toggleLoginPassword"
+                    tabindex="-1"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+                <small class="login-helper-text">
+                  Introduce tu contraseña para acceder
+                </small>
+              </div>
+
+              <button type="submit" class="login-btn-submit">Acceder</button>
+
+              <div
+                id="loginError"
+                class="login-alert login-alert-error d-none"
+                role="alert"
+              ></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
       <div class="header-container">
@@ -63,26 +142,32 @@
             <button
               class="sidebar-nav-item active"
               data-view="all"
-              title="Ver todas las cuentas"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Ver todas las cuentas"
             >
               <i class="bi bi-inbox"></i>
-              <span>Todas las cuentas</span>
+              <span class="sidebar-label">Todas las cuentas</span>
             </button>
             <button
               class="sidebar-nav-item"
               data-view="favorites"
-              title="Ver solo favoritas"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Ver solo favoritas"
             >
               <i class="bi bi-star-fill"></i>
-              <span>Favoritas</span>
+              <span class="sidebar-label">Favoritas</span>
             </button>
             <button
               class="sidebar-nav-item"
               data-view="inactive"
-              title="Ver archivadas"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Ver archivadas"
             >
               <i class="bi bi-archive"></i>
-              <span>Archivadas</span>
+              <span class="sidebar-label">Archivadas</span>
             </button>
           </nav>
         </div>
@@ -91,25 +176,55 @@
         <div class="sidebar-section">
           <h4 class="sidebar-section-title">Categorías</h4>
           <nav class="sidebar-nav">
-            <button class="sidebar-nav-item" data-category="personal">
+            <button
+              class="sidebar-nav-item"
+              data-category="personal"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Cuentas personales"
+            >
               <i class="bi bi-person"></i>
-              <span>Personal</span>
+              <span class="sidebar-label">Personal</span>
             </button>
-            <button class="sidebar-nav-item" data-category="trabajo">
+            <button
+              class="sidebar-nav-item"
+              data-category="trabajo"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Cuentas de trabajo"
+            >
               <i class="bi bi-briefcase"></i>
-              <span>Trabajo</span>
+              <span class="sidebar-label">Trabajo</span>
             </button>
-            <button class="sidebar-nav-item" data-category="redes-sociales">
+            <button
+              class="sidebar-nav-item"
+              data-category="redes-sociales"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Redes sociales"
+            >
               <i class="bi bi-share"></i>
-              <span>Redes Sociales</span>
+              <span class="sidebar-label">Redes Sociales</span>
             </button>
-            <button class="sidebar-nav-item" data-category="compras">
+            <button
+              class="sidebar-nav-item"
+              data-category="compras"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Cuentas de compras"
+            >
               <i class="bi bi-bag"></i>
-              <span>Compras</span>
+              <span class="sidebar-label">Compras</span>
             </button>
-            <button class="sidebar-nav-item" data-category="otros">
+            <button
+              class="sidebar-nav-item"
+              data-category="otros"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Otras cuentas"
+            >
               <i class="bi bi-folder"></i>
-              <span>Otros</span>
+              <span class="sidebar-label">Otros</span>
             </button>
           </nav>
         </div>
@@ -118,7 +233,12 @@
         <div class="sidebar-section">
           <h4 class="sidebar-section-title">Estadísticas</h4>
           <div class="sidebar-stats">
-            <div class="sidebar-stat">
+            <div
+              class="sidebar-stat"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Total de cuentas"
+            >
               <div class="sidebar-stat-value" id="sidebarTotalAccounts">0</div>
               <div class="sidebar-stat-label">Total</div>
             </div>
@@ -140,31 +260,77 @@
         <div class="sidebar-section">
           <h4 class="sidebar-section-title">Acciones</h4>
           <nav class="sidebar-nav">
-            <button class="sidebar-nav-item" id="sidebarNewAccountBtn">
+            <button
+              class="sidebar-nav-item"
+              id="sidebarNewAccountBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Nueva cuenta"
+            >
               <i class="bi bi-plus-circle"></i>
-              <span>Nueva Cuenta</span>
+              <span class="sidebar-label">Nueva Cuenta</span>
             </button>
-            <button class="sidebar-nav-item" id="sidebarExportBtn">
+            <button
+              class="sidebar-nav-item"
+              id="sidebarChangePasswordBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Cambiar contraseña maestra"
+            >
+              <i class="bi bi-key"></i>
+              <span class="sidebar-label">Cambiar Contraseña</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              id="sidebarExportBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Exportar cuentas"
+            >
               <i class="bi bi-download"></i>
-              <span>Exportar</span>
+              <span class="sidebar-label">Exportar</span>
             </button>
-            <button class="sidebar-nav-item" id="sidebarImportBtn">
+            <button
+              class="sidebar-nav-item"
+              id="sidebarImportBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Importar cuentas"
+            >
               <i class="bi bi-upload"></i>
-              <span>Importar</span>
+              <span class="sidebar-label">Importar</span>
             </button>
-            <button class="sidebar-nav-item" id="sidebarHelpBtn">
+            <button
+              class="sidebar-nav-item"
+              id="sidebarHelpBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Centro de ayuda"
+            >
               <i class="bi bi-question-circle"></i>
-              <span>Centro de Ayuda</span>
+              <span class="sidebar-label">Centro de Ayuda</span>
             </button>
           </nav>
           <div class="sidebar-actions-divider"></div>
           <button
             class="theme-toggle-sidebar"
             id="themeToggleSidebar"
-            title="Cambiar tema"
+            data-bs-toggle="tooltip"
+            data-bs-placement="right"
+            data-bs-title="Cambiar tema"
           >
             <i class="bi bi-moon"></i>
             <span>Cambiar Tema</span>
+          </button>
+          <button
+            class="theme-toggle-sidebar"
+            id="sidebarLogoutBtn"
+            data-bs-toggle="tooltip"
+            data-bs-placement="right"
+            data-bs-title="Cerrar sesión"
+          >
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </div>
@@ -308,6 +474,61 @@
           </div>
         </div>
       </div>
+
+      <!-- Skeleton Loading Container -->
+      <div class="skeleton-loader" id="skeletonLoader" style="display: none">
+        <div class="skeleton-card">
+          <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-info">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-text" style="width: 60%"></div>
+            </div>
+          </div>
+          <div class="skeleton-body">
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text" style="width: 80%"></div>
+          </div>
+          <div class="skeleton-footer">
+            <div class="skeleton-button"></div>
+            <div class="skeleton-button"></div>
+          </div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-info">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-text" style="width: 60%"></div>
+            </div>
+          </div>
+          <div class="skeleton-body">
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text" style="width: 80%"></div>
+          </div>
+          <div class="skeleton-footer">
+            <div class="skeleton-button"></div>
+            <div class="skeleton-button"></div>
+          </div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-info">
+              <div class="skeleton-title"></div>
+              <div class="skeleton-text" style="width: 60%"></div>
+            </div>
+          </div>
+          <div class="skeleton-body">
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text" style="width: 80%"></div>
+          </div>
+          <div class="skeleton-footer">
+            <div class="skeleton-button"></div>
+            <div class="skeleton-button"></div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Floating Button to Top -->
@@ -420,6 +641,174 @@
       </div>
     </div>
 
+    <!-- Modal para cambiar contraseña -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+      <div
+        class="modal-dialog modal-dialog-centered change-password-modal-dialog"
+      >
+        <div class="modal-content change-password-modal-content">
+          <div class="modal-header change-password-header">
+            <h5 class="modal-title">Cambiar Contraseña</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body change-password-body">
+            <form id="changePasswordForm">
+              <div class="change-password-form-group">
+                <label for="currentPassword" class="change-password-label"
+                  >Contraseña Actual</label
+                >
+                <div class="change-password-input-group">
+                  <input
+                    type="password"
+                    class="change-password-input"
+                    id="currentPassword"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    class="change-password-input-toggle"
+                    type="button"
+                    id="toggleCurrentPassword"
+                    tabindex="-1"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="change-password-form-group">
+                <label for="newPassword" class="change-password-label"
+                  >Nueva Contraseña</label
+                >
+                <div class="change-password-input-group">
+                  <input
+                    type="password"
+                    class="change-password-input"
+                    id="newPassword"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    class="change-password-input-toggle"
+                    type="button"
+                    id="toggleNewPassword"
+                    tabindex="-1"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="change-password-form-group">
+                <label for="confirmPassword" class="change-password-label"
+                  >Confirmar Contraseña</label
+                >
+                <div class="change-password-input-group">
+                  <input
+                    type="password"
+                    class="change-password-input"
+                    id="confirmPassword"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    class="change-password-input-toggle"
+                    type="button"
+                    id="toggleConfirmPassword"
+                    tabindex="-1"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div
+                id="changePasswordError"
+                class="change-password-alert change-password-alert-error d-none"
+                role="alert"
+              ></div>
+              <div
+                id="changePasswordSuccess"
+                class="change-password-alert change-password-alert-success d-none"
+                role="alert"
+              ></div>
+            </form>
+          </div>
+          <div class="modal-footer change-password-footer">
+            <button
+              type="button"
+              class="change-password-btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="change-password-btn-primary"
+              id="changePasswordSubmitBtn"
+            >
+              Cambiar Contraseña
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmación de Eliminación -->
+    <div
+      class="modal fade"
+      id="deleteConfirmModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered delete-confirm-modal">
+        <div class="modal-content delete-confirm-content">
+          <div class="modal-header delete-confirm-header">
+            <h5 class="modal-title">
+              <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body delete-confirm-body">
+            <p class="delete-confirm-text">
+              ¿Estás seguro de que deseas eliminar esta cuenta?
+            </p>
+            <p
+              class="delete-confirm-account-name"
+              id="deleteConfirmAccountName"
+            >
+              Cuenta: <strong></strong>
+            </p>
+            <div class="delete-confirm-warning">
+              <i class="bi bi-info-circle"></i>
+              <span>Esta acción no se puede deshacer</span>
+            </div>
+          </div>
+          <div class="modal-footer delete-confirm-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal para ayuda e información -->
     <div class="modal" id="helpModal">
       <div class="modal-content modal-help">
@@ -455,10 +844,39 @@
               <p>
                 VaultMail es un gestor seguro de cuentas de Gmail diseñado para
                 ayudarte a organizar y administrar todas tus cuentas de correo
-                en un solo lugar.
+                en un solo lugar de forma segura y eficiente.
               </p>
               <div class="help-box">
-                <h4>¿Cómo comenzar?</h4>
+                <h4><i class="bi bi-key"></i> Sistema de Login</h4>
+                <p>
+                  La primera vez que accedas, establece una contraseña maestra.
+                  Esta contraseña protege todas tus cuentas guardadas. Recuerda
+                  mantenerla segura y en un lugar seguro.
+                </p>
+                <ul>
+                  <li>Se requiere contraseña para acceder a VaultMail</li>
+                  <li>Tus datos se desbloquean solo con esta contraseña</li>
+                  <li>La contraseña se encripta localmente en tu navegador</li>
+                </ul>
+              </div>
+              <div class="help-box">
+                <h4>
+                  <i class="bi bi-arrow-left-right"></i> Cambiar Contraseña
+                </h4>
+                <p>
+                  Puedes cambiar tu contraseña maestra en cualquier momento
+                  desde el menú lateral. Necesitarás confirmar tu contraseña
+                  actual.
+                </p>
+                <ul>
+                  <li>Haz clic en "Cambiar Contraseña" en el menú lateral</li>
+                  <li>Introduce tu contraseña actual para verificación</li>
+                  <li>Ingresa la nueva contraseña y confírmala</li>
+                  <li>Los cambios se aplican inmediatamente</li>
+                </ul>
+              </div>
+              <div class="help-box">
+                <h4><i class="bi bi-plus-circle"></i> ¿Cómo comenzar?</h4>
                 <ol>
                   <li>
                     Haz clic en <strong>"+ Nueva Cuenta"</strong> para agregar
@@ -522,23 +940,23 @@
               <p>Usa estos atajos para navegar más rápidamente:</p>
               <div class="shortcuts-table">
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + A</div>
+                  <div class="shortcut-keys">Ctrl + Alt + A</div>
                   <div class="shortcut-desc">Agregar nueva cuenta</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + B</div>
+                  <div class="shortcut-keys">Ctrl + Alt + B</div>
                   <div class="shortcut-desc">Expandir/Comprimir sidebar</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + K</div>
+                  <div class="shortcut-keys">Ctrl + Alt + K</div>
                   <div class="shortcut-desc">Enfoca la barra de búsqueda</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + T</div>
+                  <div class="shortcut-keys">Ctrl + Alt + T</div>
                   <div class="shortcut-desc">Cambiar tema</div>
                 </div>
                 <div class="shortcut-item">
-                  <div class="shortcut-keys">Ctrl + F</div>
+                  <div class="shortcut-keys">Ctrl + Alt + F</div>
                   <div class="shortcut-desc">Mostrar solo favoritos</div>
                 </div>
               </div>
@@ -671,6 +1089,7 @@
       </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="main.js"></script>
   </body>
 </html>
