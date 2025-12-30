@@ -455,19 +455,6 @@ class VaultMail {
         // Toggle archived accounts button
         document.getElementById('showArchivedBtn').addEventListener('click', () => this.toggleShowOnlyArchived());
 
-        // Floating button to top
-        const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 300) {
-                scrollToTopBtn.style.display = 'flex';
-            } else {
-                scrollToTopBtn.style.display = 'none';
-            }
-        });
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
         // Logout button
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
