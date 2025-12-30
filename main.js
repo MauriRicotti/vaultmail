@@ -49,142 +49,8 @@ class VaultMail {
             this.updatePasswordStrength(e.target.value);
         });
         
-        // Setup biometric authentication
-        const biometricBtn = document.getElementById('biometricBtn');
-        if (biometricBtn) {
-            // Check if WebAuthn is available
-            if (this.isBiometricAvailable()) {
-                biometricBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.handleBiometricAuth();
-                });
-            } else {
-                // Hide button if biometric is not available
-                biometricBtn.style.display = 'none';
-                const divider = document.querySelector('.login-screen-divider');
-                if (divider) divider.style.display = 'none';
-            }
-        }
-        
         // Focus on password input
         document.getElementById('loginPassword').focus();
-    }
-
-    isBiometricAvailable() {
-        // Check if WebAuthn (Credential Management API) is available
-        return !!(navigator.credentials && window.PublicKeyCredential);
-    }
-
-    async handleBiometricAuth() {
-        const biometricBtn = document.getElementById('biometricBtn');
-        const errorDiv = document.getElementById('loginError');
-        
-        try {
-            // Disable button during authentication
-            biometricBtn.disabled = true;
-            const originalHtml = biometricBtn.innerHTML;
-            biometricBtn.innerHTML = '<i class="bi bi-hourglass-split"></i><span>Esperando huella...</span>';
-            
-            // Get stored biometric credential ID if available
-            const credentialId = localStorage.getItem('vaultmail_biometric_credential_id');
-            
-            if (!credentialId) {
-                throw new Error('No se ha registrado una huella digital. Por favor, inicia sesión con contraseña primero.');
-            }
-            
-            // Prepare assertion options - using random challenge
-            const challenge = new Uint8Array(32);
-            crypto.getRandomValues(challenge);
-            
-            try {
-                const credentialIdArray = new Uint8Array(
-                    atob(credentialId)
-                        .split('')
-                        .map(c => c.charCodeAt(0))
-                );
-                
-                const assertionOptions = {
-                    challenge: challenge,
-                    timeout: 60000,
-                    userVerification: 'preferred',
-                    allowCredentials: [
-                        {
-                            id: credentialIdArray,
-                            type: 'public-key',
-                            transports: ['internal']
-                        }
-                    ]
-                };
-                
-                // Get assertion from biometric
-                const assertion = await navigator.credentials.get({
-                    publicKey: assertionOptions,
-                    mediation: 'optional'
-                });
-                
-                if (assertion) {
-                    // Successfully authenticated with biometric
-                    localStorage.setItem('vaultmail_authenticated', 'true');
-                    
-                    // Show success message
-                    errorDiv.textContent = '¡Acceso concedido!';
-                    errorDiv.classList.remove('d-none', 'login-screen-alert-error');
-                    errorDiv.classList.add('login-screen-alert-success');
-                    
-                    // Show success screen
-                    setTimeout(() => {
-                        this.showSuccessScreen();
-                    }, 500);
-                } else {
-                    throw new Error('No se pudo autenticar con la huella digital.');
-                }
-            } catch (bioError) {
-                // If WebAuthn fails, fall back to showing error
-                if (bioError.name === 'NotAllowedError') {
-                    throw new Error('Autenticación biométrica cancelada.');
-                } else if (bioError.name === 'InvalidStateError') {
-                    throw new Error('Huella digital no registrada o incompatible.');
-                } else {
-                    throw bioError;
-                }
-            }
-        } catch (error) {
-            // Reset button
-            biometricBtn.disabled = false;
-            biometricBtn.innerHTML = '<i class="bi bi-fingerprint"></i><span>Acceder mediante huella</span>';
-            
-            // Show error message
-            console.error('Error de autenticación biométrica:', error);
-            const errorMessage = error.message || 'Error al autenticar con huella digital. Usa contraseña en su lugar.';
-            errorDiv.textContent = errorMessage;
-            errorDiv.classList.remove('d-none', 'login-screen-alert-success');
-            errorDiv.classList.add('login-screen-alert-error');
-        }
-    }
-
-    showSuccessScreen() {
-        const successScreen = document.getElementById('successScreen');
-        successScreen.classList.remove('d-none');
-        
-        // Hide login screen after success screen is shown
-        setTimeout(() => {
-            document.getElementById('loginScreen').classList.add('d-none');
-            document.body.style.overflow = 'auto';
-            
-            // Restore saved theme
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-mode');
-            } else {
-                document.body.classList.remove('light-mode');
-            }
-            
-            // Hide success screen and initialize dashboard
-            setTimeout(() => {
-                successScreen.classList.add('d-none');
-                this.init();
-            }, 2000);
-        }, 800);
     }
 
     updatePasswordStrength(password) {
@@ -241,9 +107,7 @@ class VaultMail {
             localStorage.setItem('vaultmail_master_password', this.hashPassword(password));
             localStorage.setItem('vaultmail_authenticated', 'true');
             document.getElementById('loginForm').reset();
-            
-            // Offer to register biometric after first login
-            this.offerBiometricRegistration();
+            this.accessDashboard();
         } else {
             // Verify password
             if (this.verifyPassword(password, storedPassword)) {
@@ -285,71 +149,6 @@ class VaultMail {
         this.init();
     }
 
-    async offerBiometricRegistration() {
-        // After first login, offer to register biometric authentication
-        if (!this.isBiometricAvailable()) {
-            // Device doesn't support biometric
-            this.accessDashboard();
-            return;
-        }
-
-        // Check if already registered
-        if (localStorage.getItem('vaultmail_biometric_credential_id')) {
-            this.accessDashboard();
-            return;
-        }
-
-        const confirmed = confirm('¿Deseas registrar tu huella digital para futuras autenticaciones?\n\nEsto te permitirá desbloquear la app con tu huella sin escribir la contraseña.');
-        
-        if (!confirmed) {
-            this.accessDashboard();
-            return;
-        }
-
-        try {
-            // Register biometric credential
-            const registrationOptions = {
-                challenge: new Uint8Array(32),
-                rp: {
-                    name: 'VaultMail',
-                    id: window.location.hostname
-                },
-                user: {
-                    id: new Uint8Array(16),
-                    name: 'vaultmail_user',
-                    displayName: 'Usuario VaultMail'
-                },
-                pubKeyCredParams: [
-                    { type: 'public-key', alg: -7 },
-                    { type: 'public-key', alg: -257 }
-                ],
-                authenticatorSelection: {
-                    authenticatorAttachment: 'platform',
-                    userVerification: 'preferred'
-                },
-                timeout: 60000,
-                attestation: 'none'
-            };
-
-            const credential = await navigator.credentials.create({
-                publicKey: registrationOptions
-            });
-
-            if (credential) {
-                // Store credential ID in localStorage
-                const credentialId = btoa(
-                    String.fromCharCode.apply(null, new Uint8Array(credential.id))
-                );
-                localStorage.setItem('vaultmail_biometric_credential_id', credentialId);
-                localStorage.setItem('vaultmail_biometric_registered', 'true');
-            }
-        } catch (error) {
-            console.warn('Error registering biometric:', error);
-        } finally {
-            this.accessDashboard();
-        }
-    }
-
     hashPassword(password) {
         // Simple hash using btoa (base64 encoding with a salt)
         const salt = 'vaultmail_2025';
@@ -358,162 +157,6 @@ class VaultMail {
 
     verifyPassword(password, hashedPassword) {
         return this.hashPassword(password) === hashedPassword;
-    }
-
-    updateBiometricButtonState() {
-        const biometricBtn = document.getElementById('biometricRegisterBtn');
-        if (!biometricBtn) return;
-
-        // Check if biometric is available and show button
-        if (this.isBiometricAvailable()) {
-            biometricBtn.classList.add('show');
-
-            // Check if already registered
-            const isRegistered = localStorage.getItem('vaultmail_biometric_registered') === 'true';
-            if (isRegistered) {
-                biometricBtn.classList.add('registered');
-                biometricBtn.innerHTML = '<i class="bi bi-fingerprint"></i><span>Huella Registrada</span>';
-                biometricBtn.title = 'Tu huella digital ya está registrada';
-                biometricBtn.style.cursor = 'default';
-                biometricBtn.disabled = true;
-            } else {
-                biometricBtn.classList.remove('registered');
-                biometricBtn.innerHTML = '<i class="bi bi-fingerprint"></i><span>Registrar Huella</span>';
-                biometricBtn.title = 'Registra tu huella para acceso rápido';
-                biometricBtn.style.cursor = 'pointer';
-                biometricBtn.disabled = false;
-            }
-        } else {
-            // Hide button if biometric not available
-            biometricBtn.classList.remove('show');
-        }
-    }
-
-    async handleBiometricRegistration() {
-        const biometricBtn = document.getElementById('biometricRegisterBtn');
-
-        // Check if already registered
-        if (localStorage.getItem('vaultmail_biometric_registered') === 'true') {
-            // Show alert that it's already registered
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alertDiv.style.top = '20px';
-            alertDiv.style.right = '20px';
-            alertDiv.style.zIndex = '10000';
-            alertDiv.innerHTML = `
-                <strong>✓ Huella registrada</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 3000);
-            return;
-        }
-
-        try {
-            // Disable button during registration
-            biometricBtn.disabled = true;
-            const originalHtml = biometricBtn.innerHTML;
-            biometricBtn.innerHTML = '<i class="bi bi-hourglass-split"></i><span>Registrando...</span>';
-
-            // Register biometric credential
-            const registrationOptions = {
-                challenge: new Uint8Array(32),
-                rp: {
-                    name: 'VaultMail',
-                    id: window.location.hostname
-                },
-                user: {
-                    id: new Uint8Array(16),
-                    name: 'vaultmail_user',
-                    displayName: 'Usuario VaultMail'
-                },
-                pubKeyCredParams: [
-                    { type: 'public-key', alg: -7 },
-                    { type: 'public-key', alg: -257 }
-                ],
-                authenticatorSelection: {
-                    authenticatorAttachment: 'platform',
-                    userVerification: 'preferred'
-                },
-                timeout: 60000,
-                attestation: 'none'
-            };
-
-            // Generate random challenge
-            crypto.getRandomValues(registrationOptions.challenge);
-            crypto.getRandomValues(registrationOptions.user.id);
-
-            const credential = await navigator.credentials.create({
-                publicKey: registrationOptions
-            });
-
-            if (credential) {
-                // Store credential ID in localStorage
-                const credentialId = btoa(
-                    String.fromCharCode.apply(null, new Uint8Array(credential.id))
-                );
-                localStorage.setItem('vaultmail_biometric_credential_id', credentialId);
-                localStorage.setItem('vaultmail_biometric_registered', 'true');
-
-                // Update button state
-                this.updateBiometricButtonState();
-
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                alertDiv.style.top = '20px';
-                alertDiv.style.right = '20px';
-                alertDiv.style.zIndex = '10000';
-                alertDiv.innerHTML = `
-                    <strong>✓ Huella registrada exitosamente</strong>
-                    <p class="mb-0" style="font-size: 0.9rem;">Ya puedes usar tu huella para acceder en el login</p>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.body.appendChild(alertDiv);
-                
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 4000);
-            } else {
-                throw new Error('No se pudo crear la credencial biométrica.');
-            }
-        } catch (error) {
-            // Reset button
-            biometricBtn.disabled = false;
-            biometricBtn.innerHTML = '<i class="bi bi-fingerprint"></i><span>Registrar Huella</span>';
-
-            // Show error message
-            console.error('Error registering biometric:', error);
-            
-            let errorMessage = 'Error al registrar la huella digital.';
-            
-            if (error.name === 'NotAllowedError') {
-                errorMessage = 'Registro de huella cancelado.';
-            } else if (error.name === 'InvalidStateError') {
-                errorMessage = 'Este dispositivo no soporta registro biométrico.';
-            } else if (error.name === 'NotSupportedError') {
-                errorMessage = 'Autenticación biométrica no soportada en este navegador.';
-            }
-
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-            alertDiv.style.top = '20px';
-            alertDiv.style.right = '20px';
-            alertDiv.style.zIndex = '10000';
-            alertDiv.innerHTML = `
-                <strong>✗ Error</strong>
-                <p class="mb-0" style="font-size: 0.9rem;">${errorMessage}</p>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
-        }
     }
 
     openChangePasswordModal() {
@@ -657,7 +300,6 @@ class VaultMail {
         this.renderAccounts();
         this.updateStats();
         this.initializeTooltips(); // Initialize tooltips only if sidebar is collapsed
-        this.updateBiometricButtonState(); // Update biometric button visibility
     }
 
     setupEventListeners() {
@@ -759,17 +401,6 @@ class VaultMail {
             this.hideAllTooltips();
             this.handleLogout();
         });
-
-        // Biometric registration button
-        const biometricRegisterBtn = document.getElementById('biometricRegisterBtn');
-        if (biometricRegisterBtn) {
-            biometricRegisterBtn.addEventListener('click', () => {
-                this.hideAllTooltips();
-                this.handleBiometricRegistration();
-            });
-            // Initialize biometric button visibility
-            this.updateBiometricButtonState();
-        }
 
         // Export/Import buttons
         document.getElementById('exportBtn').addEventListener('click', () => this.exportAccounts());
