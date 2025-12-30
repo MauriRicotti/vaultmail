@@ -123,6 +123,55 @@ body.light-mode * {
   scrollbar-color: rgba(71, 85, 105, 0.3) transparent;
 }
 
+/* Botón Instalar App */
+.install-app-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.install-app-btn:hover {
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+  color: white;
+}
+
+.install-app-btn:active {
+  transform: translateY(0);
+}
+
+.install-app-btn i {
+  font-size: 1.1rem;
+}
+
+.install-app-btn.hidden {
+  display: none;
+}
+
+/* Botón en footer */
+.footer-install-wrapper {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Botón en login */
+.login-install-wrapper {
+  margin-top: 1rem;
+  text-align: center;
+}
+
 /* Header */
 .header {
   background-color: var(--bg-darker);

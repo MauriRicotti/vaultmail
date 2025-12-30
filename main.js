@@ -9,7 +9,77 @@ class VaultMail {
         this.viewMode = 'cards'; // 'cards' or 'table'
         this.currentPage = 1;
         this.itemsPerPage = 6;
+        this.deferredPrompt = null; // Para almacenar el evento de instalación
         this.initAuth();
+        this.initInstallPrompt();
+    }
+
+    // Inicializar el prompt de instalación PWA
+    initInstallPrompt() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            this.showInstallButtons();
+        });
+
+        // Escuchar cuando la app fue instalada
+        window.addEventListener('appinstalled', () => {
+            this.deferredPrompt = null;
+            this.hideInstallButtons();
+        });
+
+        // Asignar listeners a los botones de instalación
+        const loginInstallBtn = document.getElementById('loginInstallBtn');
+        const footerInstallBtn = document.getElementById('footerInstallBtn');
+
+        if (loginInstallBtn) {
+            loginInstallBtn.addEventListener('click', () => this.promptInstall());
+        }
+
+        if (footerInstallBtn) {
+            footerInstallBtn.addEventListener('click', () => this.promptInstall());
+        }
+    }
+
+    // Mostrar botones de instalación
+    showInstallButtons() {
+        const loginInstallBtn = document.getElementById('loginInstallBtn');
+        const footerInstallBtn = document.getElementById('footerInstallBtn');
+
+        if (loginInstallBtn) {
+            loginInstallBtn.classList.remove('hidden');
+        }
+
+        if (footerInstallBtn) {
+            footerInstallBtn.classList.remove('hidden');
+        }
+    }
+
+    // Ocultar botones de instalación
+    hideInstallButtons() {
+        const loginInstallBtn = document.getElementById('loginInstallBtn');
+        const footerInstallBtn = document.getElementById('footerInstallBtn');
+
+        if (loginInstallBtn) {
+            loginInstallBtn.classList.add('hidden');
+        }
+
+        if (footerInstallBtn) {
+            footerInstallBtn.classList.add('hidden');
+        }
+    }
+
+    // Manejar el prompt de instalación
+    async promptInstall() {
+        if (!this.deferredPrompt) {
+            return;
+        }
+
+        // Mostrar el prompt nativo
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        console.log(`Usuario respondió al prompt: ${outcome}`);
+        this.deferredPrompt = null;
     }
 
     initAuth() {
