@@ -14,7 +14,7 @@ class VaultMail {
 
     initAuth() {
         // Check if user is authenticated
-        const isAuthenticated = sessionStorage.getItem('vaultmail_authenticated');
+        const isAuthenticated = localStorage.getItem('vaultmail_authenticated');
         if (!isAuthenticated) {
             this.showLoginModal();
         } else {
@@ -26,6 +26,9 @@ class VaultMail {
         // Show login screen fullscreen
         const loginScreen = document.getElementById('loginScreen');
         loginScreen.classList.remove('d-none');
+        
+        // Forzar tema oscuro en la pantalla de login
+        document.body.classList.remove('light-mode');
         
         // Ocultar scrollbar del body
         document.body.style.overflow = 'hidden';
@@ -102,13 +105,13 @@ class VaultMail {
         if (!storedPassword) {
             // First login - set master password
             localStorage.setItem('vaultmail_master_password', this.hashPassword(password));
-            sessionStorage.setItem('vaultmail_authenticated', 'true');
+            localStorage.setItem('vaultmail_authenticated', 'true');
             document.getElementById('loginForm').reset();
             this.accessDashboard();
         } else {
             // Verify password
             if (this.verifyPassword(password, storedPassword)) {
-                sessionStorage.setItem('vaultmail_authenticated', 'true');
+                localStorage.setItem('vaultmail_authenticated', 'true');
                 document.getElementById('loginForm').reset();
                 document.getElementById('loginError').classList.add('d-none');
                 
@@ -136,6 +139,13 @@ class VaultMail {
     accessDashboard() {
         document.getElementById('loginScreen').classList.add('d-none');
         document.body.style.overflow = 'auto';
+        // Restaurar tema guardado al entrar al dashboard
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
         this.init();
     }
 
@@ -248,8 +258,21 @@ class VaultMail {
         }, { once: true });
     }
 
+    handleEmailInput(e) {
+        const emailInput = e.target;
+        const emailSuffix = document.getElementById('emailSuffix');
+        const value = emailInput.value;
+        
+        // Si el valor contiene @, ocultar el sufijo
+        if (value.includes('@')) {
+            emailSuffix.classList.add('hidden');
+        } else {
+            emailSuffix.classList.remove('hidden');
+        }
+    }
+
     performLogout() {
-        sessionStorage.removeItem('vaultmail_authenticated');
+        localStorage.removeItem('vaultmail_authenticated');
         document.getElementById('logoutConfirmModal').classList.add('d-none');
         document.getElementById('loginScreen').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
@@ -326,6 +349,10 @@ class VaultMail {
         // Form submit
         document.getElementById('accountForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
 
+        // Email input - handle @gmail.com suffix visibility
+        document.getElementById('email').addEventListener('input', (e) => this.handleEmailInput(e));
+        document.getElementById('email').addEventListener('focus', (e) => this.handleEmailInput(e));
+
         // Status checkbox - toggle inactive until field
         document.getElementById('status').addEventListener('change', (e) => {
             const inactiveUntilGroup = document.getElementById('inactiveUntilGroup');
@@ -385,19 +412,6 @@ class VaultMail {
         // Toggle archived accounts button
         document.getElementById('showArchivedBtn').addEventListener('click', () => this.toggleShowOnlyArchived());
 
-        // Floating button to top
-        const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 300) {
-                scrollToTopBtn.style.display = 'flex';
-            } else {
-                scrollToTopBtn.style.display = 'none';
-            }
-        });
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
         // Logout button
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -446,9 +460,10 @@ class VaultMail {
             e.preventDefault();
             this.openNewAccountModal();
         }
-        // Ctrl+K: Focus search bar
+        // Ctrl+K: Focus search bar and scroll to top
         else if (e.ctrlKey && e.key.toLowerCase() === 'k') {
             e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             document.getElementById('searchInput').focus();
         }
         // Ctrl+T: Toggle theme
@@ -523,8 +538,20 @@ class VaultMail {
     openNewAccountModal() {
         this.currentEditingId = null;
         document.getElementById('accountForm').reset();
+        
+        // Resetear el estado del grupo de fecha inactiva
+        const inactiveUntilGroup = document.getElementById('inactiveUntilGroup');
+        const statusCheckbox = document.getElementById('status');
+        inactiveUntilGroup.style.display = 'none';
+        document.getElementById('inactiveUntil').value = '';
+        
         document.querySelector('.modal-header h2').textContent = 'Agregar Nueva Cuenta';
         document.querySelector('.modal-description').textContent = 'Completa los datos de tu cuenta de Gmail';
+        // Mostrar el sufijo @gmail.com cuando se abre el modal
+        const emailSuffix = document.getElementById('emailSuffix');
+        if (emailSuffix) {
+            emailSuffix.classList.remove('hidden');
+        }
         document.getElementById('accountModal').classList.add('active');
     }
 
@@ -540,7 +567,13 @@ class VaultMail {
     handleFormSubmit(e) {
         e.preventDefault();
 
-        const email = document.getElementById('email').value;
+        let email = document.getElementById('email').value.trim();
+        
+        // Si el email no contiene @, agregar @gmail.com automáticamente
+        if (!email.includes('@')) {
+            email = email + '@gmail.com';
+        }
+        
         const statusCheckbox = document.getElementById('status').checked;
         const inactiveUntilValue = document.getElementById('inactiveUntil').value;
 
@@ -1473,6 +1506,9 @@ class VaultMail {
         const themeToggleSidebar = document.getElementById('themeToggleSidebar');
         const iconElement = themeToggleSidebar.querySelector('i');
         
+        // Agregar clase para efecto de transición
+        body.classList.add('theme-transitioning');
+        
         body.classList.toggle('light-mode');
         
         // Cambiar el icono
@@ -1483,9 +1519,21 @@ class VaultMail {
             iconElement.className = 'bi bi-moon';
             localStorage.setItem('theme', 'dark');
         }
+        
+        // Remover la clase de transición después de completarla
+        setTimeout(() => {
+            body.classList.remove('theme-transitioning');
+        }, 300);
     }
 
     initTheme() {
+        // No aplicar tema si estamos en la pantalla de login
+        const loginScreen = document.getElementById('loginScreen');
+        if (loginScreen && !loginScreen.classList.contains('d-none')) {
+            document.body.classList.remove('light-mode');
+            return;
+        }
+        
         const savedTheme = localStorage.getItem('theme') || 'dark';
         const body = document.body;
         const themeToggleSidebar = document.getElementById('themeToggleSidebar');

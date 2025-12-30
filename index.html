@@ -6,14 +6,21 @@
     <title>VaultMail - Gestor seguro de cuentas</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail-Favicon.png" />
-    
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="Assets/Logo VaultMail-Favicon.png"
+    />
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    
+
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="true" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="VaultMail" />
     <meta name="theme-color" content="#7C3AED" />
 
@@ -201,6 +208,9 @@
             <h1>VaultMail</h1>
             <p>Gestor seguro de cuentas</p>
           </div>
+        </div>
+        <div class="header-tagline">
+          <span>Almacena seguro. Accede rápido.</span>
         </div>
         <div class="header-spacer"></div>
         <button class="logout-btn" id="logoutBtn" title="Cerrar sesión">
@@ -668,11 +678,6 @@
       </div>
     </main>
 
-    <!-- Floating Button to Top -->
-    <button class="btn-floating-top" id="scrollToTopBtn" title="Ir al inicio">
-      <i class="bi bi-arrow-up-short"></i>
-    </button>
-
     <!-- Hidden file input for import -->
     <input
       type="file"
@@ -696,12 +701,10 @@
         <form id="accountForm">
           <div class="form-group">
             <label for="email">Correo electrónico</label>
-            <input
-              type="email"
-              id="email"
-              required
-              placeholder="tu-email@gmail.com"
-            />
+            <div class="email-input-wrapper">
+              <input type="text" id="email" required placeholder="tu-email" />
+              <span class="email-suffix" id="emailSuffix">@gmail.com</span>
+            </div>
           </div>
           <div class="form-group">
             <label for="password">Contraseña</label>
@@ -928,7 +931,19 @@
             >
               Cuenta: <strong></strong>
             </p>
-            <div class="delete-confirm-category" style="padding: 0.5rem 1rem; border-radius: 8px; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0;"></div>
+            <div
+              class="delete-confirm-category"
+              style="
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin: 0.75rem 0;
+              "
+            ></div>
             <div class="delete-confirm-warning">
               <i class="bi bi-info-circle"></i>
               <span>Esta acción no se puede deshacer</span>
@@ -980,7 +995,19 @@
             >
               Correo: <strong></strong>
             </p>
-            <div class="duplicate-confirm-category" style="padding: 0.5rem 1rem; border-radius: 8px; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0;"></div>
+            <div
+              class="duplicate-confirm-category"
+              style="
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin: 0.75rem 0;
+              "
+            ></div>
             <div class="delete-confirm-warning">
               <i class="bi bi-info-circle"></i>
               <span>¿Deseas guardar esta cuenta de todas formas?</span>
@@ -994,7 +1021,11 @@
             >
               Cancelar
             </button>
-            <button type="button" class="btn btn-primary" id="confirmDuplicateBtn">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="confirmDuplicateBtn"
+            >
               <i class="bi bi-check"></i> Guardar de Todas Formas
             </button>
           </div>
@@ -1020,12 +1051,6 @@
             </button>
             <button class="help-tab-btn" data-tab="atajos">
               <i class="bi bi-keyboard"></i> Atajos
-            </button>
-            <button class="help-tab-btn" data-tab="privacidad">
-              <i class="bi bi-shield-lock"></i> Privacidad
-            </button>
-            <button class="help-tab-btn" data-tab="preguntas">
-              <i class="bi bi-chat-dots"></i> Preguntas
             </button>
           </div>
 
@@ -1088,8 +1113,9 @@
               <div class="help-feature">
                 <h4><i class="bi bi-folder"></i> Categorización</h4>
                 <p>
-                  Organiza tus cuentas en diferentes categorías: Streaming, Redes Sociales, 
-                  Billetera Virtual, Trabajo, App, Video Juego, Personal y Otros.
+                  Organiza tus cuentas en diferentes categorías: Streaming,
+                  Redes Sociales, Billetera Virtual, Trabajo, App, Video Juego,
+                  Personal y Otros.
                 </p>
               </div>
               <div class="help-feature">
@@ -1154,86 +1180,16 @@
                 </div>
                 <div class="shortcut-item">
                   <div class="shortcut-keys">Ctrl + Alt + ←</div>
-                  <div class="shortcut-desc">Ir a página anterior (paginación)</div>
+                  <div class="shortcut-desc">
+                    Ir a página anterior (paginación)
+                  </div>
                 </div>
                 <div class="shortcut-item">
                   <div class="shortcut-keys">Ctrl + Alt + →</div>
-                  <div class="shortcut-desc">Ir a página siguiente (paginación)</div>
+                  <div class="shortcut-desc">
+                    Ir a página siguiente (paginación)
+                  </div>
                 </div>
-              </div>
-            </div>
-              </div>
-            </div>
-
-            <!-- Privacidad -->
-            <div class="help-section" data-section="privacidad">
-              <h3>Privacidad y Seguridad</h3>
-              <div class="help-box">
-                <h4>🔒 Almacenamiento Local</h4>
-                <p>
-                  Todos tus datos se guardan en el almacenamiento local de tu
-                  navegador. <strong>Nunca se envían a ningún servidor.</strong>
-                </p>
-              </div>
-              <div class="help-box">
-                <h4>⚠️ Importante</h4>
-                <ul>
-                  <li>
-                    Tus datos se eliminan si limpias el almacenamiento del
-                    navegador
-                  </li>
-                  <li>
-                    Realiza copias de seguridad regularmente usando la función
-                    "Exportar"
-                  </li>
-                  <li>
-                    No compartas tu navegador con otras personas si almacenas
-                    datos sensibles
-                  </li>
-                  <li>
-                    VaultMail solo funciona en el dispositivo donde lo instales
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Preguntas Frecuentes -->
-            <div class="help-section" data-section="preguntas">
-              <h3>Preguntas Frecuentes</h3>
-              <div class="help-box">
-                <h4>¿Dónde se guardan mis datos?</h4>
-                <p>
-                  Se guardan en el almacenamiento local de tu navegador
-                  (localStorage). No se envían a ningún servidor externo.
-                </p>
-              </div>
-              <div class="help-box">
-                <h4>¿Puedo exportar mis cuentas?</h4>
-                <p>
-                  Sí, haz clic en el botón "Exportar" para descargar un archivo
-                  JSON con todas tus cuentas.
-                </p>
-              </div>
-              <div class="help-box">
-                <h4>¿Qué pasa si pierdo mis datos?</h4>
-                <p>
-                  Si limpias el caché o datos del navegador, perderás toda la
-                  información. Realiza copias de seguridad regularmente.
-                </p>
-              </div>
-              <div class="help-box">
-                <h4>¿Cómo importo cuentas desde un archivo?</h4>
-                <p>
-                  Haz clic en "Importar" y selecciona un archivo JSON
-                  previamente exportado.
-                </p>
-              </div>
-              <div class="help-box">
-                <h4>¿Qué tipos de categorías hay?</h4>
-                <p>
-                  Las categorías disponibles son: Streaming, Redes Sociales, Billetera Virtual, 
-                  Trabajo, App, Video Juego, Personal y Otros. Organiza tus cuentas por categoría.
-                </p>
               </div>
             </div>
           </div>
@@ -1294,46 +1250,55 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="main.js"></script>
-    
+
     <!-- Service Worker Registration para PWA/Offline -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
             .then((registration) => {
-              console.log('[App] Service Worker registrado exitosamente:', registration);
-              
+              console.log(
+                "[App] Service Worker registrado exitosamente:",
+                registration
+              );
+
               // Detectar actualizaciones disponibles
-              registration.addEventListener('updatefound', () => {
+              registration.addEventListener("updatefound", () => {
                 const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('[App] Nueva versión disponible. Actualizar...');
+                newWorker.addEventListener("statechange", () => {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    console.log(
+                      "[App] Nueva versión disponible. Actualizar..."
+                    );
                     // Aquí podrías mostrar una notificación al usuario
                   }
                 });
               });
             })
             .catch((error) => {
-              console.error('[App] Error al registrar Service Worker:', error);
+              console.error("[App] Error al registrar Service Worker:", error);
             });
         });
       }
-      
+
       // Detectar cambios en conexión
-      window.addEventListener('online', () => {
-        console.log('[App] Conexión a internet restaurada');
-        document.body.classList.remove('offline-mode');
+      window.addEventListener("online", () => {
+        console.log("[App] Conexión a internet restaurada");
+        document.body.classList.remove("offline-mode");
       });
-      
-      window.addEventListener('offline', () => {
-        console.log('[App] Sin conexión a internet - Modo offline activado');
-        document.body.classList.add('offline-mode');
+
+      window.addEventListener("offline", () => {
+        console.log("[App] Sin conexión a internet - Modo offline activado");
+        document.body.classList.add("offline-mode");
       });
-      
+
       // Verificar estado inicial
       if (!navigator.onLine) {
-        document.body.classList.add('offline-mode');
+        document.body.classList.add("offline-mode");
       }
     </script>
   </body>
