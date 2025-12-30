@@ -6,7 +6,16 @@
     <title>VaultMail - Gestor seguro de cuentas</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail - Favicon.webp" />
+    <link rel="icon" type="image/svg+xml" href="Assets/Logo VaultMail-Favicon.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="true" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VaultMail" />
+    <meta name="theme-color" content="#7C3AED" />
 
     <!-- Bootstrap CSS -->
     <link
@@ -259,58 +268,91 @@
           </nav>
         </div>
 
+        <!-- Separator -->
+        <div class="sidebar-section-divider"></div>
+
         <!-- Categories Section -->
         <div class="sidebar-section">
           <h4 class="sidebar-section-title">Categorías</h4>
           <nav class="sidebar-nav">
             <button
               class="sidebar-nav-item"
-              data-category="personal"
+              data-category="streaming"
               data-bs-toggle="tooltip"
               data-bs-placement="right"
-              data-bs-title="Cuentas personales"
+              data-bs-title="Streaming"
             >
-              <i class="bi bi-person"></i>
-              <span class="sidebar-label">Personal</span>
-            </button>
-            <button
-              class="sidebar-nav-item"
-              data-category="trabajo"
-              data-bs-toggle="tooltip"
-              data-bs-placement="right"
-              data-bs-title="Cuentas de trabajo"
-            >
-              <i class="bi bi-briefcase"></i>
-              <span class="sidebar-label">Trabajo</span>
+              <i class="bi bi-play-circle-fill"></i>
+              <span class="sidebar-label">Streaming</span>
             </button>
             <button
               class="sidebar-nav-item"
               data-category="redes-sociales"
               data-bs-toggle="tooltip"
               data-bs-placement="right"
-              data-bs-title="Redes sociales"
+              data-bs-title="Redes Sociales"
             >
               <i class="bi bi-share"></i>
               <span class="sidebar-label">Redes Sociales</span>
             </button>
             <button
               class="sidebar-nav-item"
-              data-category="compras"
+              data-category="billetera-virtual"
               data-bs-toggle="tooltip"
               data-bs-placement="right"
-              data-bs-title="Cuentas de compras"
+              data-bs-title="Billetera Virtual"
             >
-              <i class="bi bi-bag"></i>
-              <span class="sidebar-label">Compras</span>
+              <i class="bi bi-wallet-fill"></i>
+              <span class="sidebar-label">Billetera Virtual</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-category="trabajo"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Trabajo"
+            >
+              <i class="bi bi-briefcase-fill"></i>
+              <span class="sidebar-label">Trabajo</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-category="app"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="App"
+            >
+              <i class="bi bi-phone"></i>
+              <span class="sidebar-label">App</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-category="video-juego"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Video Juego"
+            >
+              <i class="bi bi-controller"></i>
+              <span class="sidebar-label">Video Juego</span>
+            </button>
+            <button
+              class="sidebar-nav-item"
+              data-category="personal"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Personal"
+            >
+              <i class="bi bi-person-circle"></i>
+              <span class="sidebar-label">Personal</span>
             </button>
             <button
               class="sidebar-nav-item"
               data-category="otros"
               data-bs-toggle="tooltip"
               data-bs-placement="right"
-              data-bs-title="Otras cuentas"
+              data-bs-title="Otros"
             >
-              <i class="bi bi-folder"></i>
+              <i class="bi bi-box-seam"></i>
               <span class="sidebar-label">Otros</span>
             </button>
           </nav>
@@ -461,10 +503,13 @@
         <div class="filters">
           <select id="categoryFilter" class="filter-select">
             <option value="">Todas las categorías</option>
-            <option value="personal">Personal</option>
-            <option value="trabajo">Trabajo</option>
+            <option value="streaming">Streaming</option>
             <option value="redes-sociales">Redes Sociales</option>
-            <option value="compras">Compras</option>
+            <option value="billetera-virtual">Billetera Virtual</option>
+            <option value="trabajo">Trabajo</option>
+            <option value="app">App</option>
+            <option value="video-juego">Video Juego</option>
+            <option value="personal">Personal</option>
             <option value="otros">Otros</option>
           </select>
           <select id="statusFilter" class="filter-select">
@@ -678,10 +723,13 @@
             <label for="category">Categoría</label>
             <select id="category" required>
               <option value="">Selecciona una categoría</option>
-              <option value="personal">Personal</option>
-              <option value="trabajo">Trabajo</option>
+              <option value="streaming">Streaming</option>
               <option value="redes-sociales">Redes Sociales</option>
-              <option value="compras">Compras</option>
+              <option value="billetera-virtual">Billetera Virtual</option>
+              <option value="trabajo">Trabajo</option>
+              <option value="app">App</option>
+              <option value="video-juego">Video Juego</option>
+              <option value="personal">Personal</option>
               <option value="otros">Otros</option>
             </select>
           </div>
@@ -880,6 +928,7 @@
             >
               Cuenta: <strong></strong>
             </p>
+            <div class="delete-confirm-category" style="padding: 0.5rem 1rem; border-radius: 8px; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0;"></div>
             <div class="delete-confirm-warning">
               <i class="bi bi-info-circle"></i>
               <span>Esta acción no se puede deshacer</span>
@@ -895,6 +944,58 @@
             </button>
             <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
               <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para confirmar duplicados -->
+    <div
+      class="modal fade"
+      id="duplicateConfirmModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered delete-confirm-modal">
+        <div class="modal-content delete-confirm-content">
+          <div class="modal-header delete-confirm-header">
+            <h5 class="modal-title">
+              <i class="bi bi-exclamation-circle"></i> Cuenta Duplicada
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body delete-confirm-body">
+            <p class="delete-confirm-text">
+              Esta cuenta ya existe en tu sistema
+            </p>
+            <p
+              class="delete-confirm-account-name"
+              id="duplicateConfirmAccountName"
+            >
+              Correo: <strong></strong>
+            </p>
+            <div class="duplicate-confirm-category" style="padding: 0.5rem 1rem; border-radius: 8px; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0;"></div>
+            <div class="delete-confirm-warning">
+              <i class="bi bi-info-circle"></i>
+              <span>¿Deseas guardar esta cuenta de todas formas?</span>
+            </div>
+          </div>
+          <div class="modal-footer delete-confirm-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-primary" id="confirmDuplicateBtn">
+              <i class="bi bi-check"></i> Guardar de Todas Formas
             </button>
           </div>
         </div>
@@ -987,8 +1088,8 @@
               <div class="help-feature">
                 <h4><i class="bi bi-folder"></i> Categorización</h4>
                 <p>
-                  Organiza tus cuentas en 5 categorías: Personal, Trabajo, Redes
-                  Sociales, Compras y Otros.
+                  Organiza tus cuentas en diferentes categorías: Streaming, Redes Sociales, 
+                  Billetera Virtual, Trabajo, App, Video Juego, Personal y Otros.
                 </p>
               </div>
               <div class="help-feature">
@@ -1130,8 +1231,8 @@
               <div class="help-box">
                 <h4>¿Qué tipos de categorías hay?</h4>
                 <p>
-                  Personal, Trabajo, Redes Sociales, Compras y Otros. Puedes
-                  organizarte por categoría.
+                  Las categorías disponibles son: Streaming, Redes Sociales, Billetera Virtual, 
+                  Trabajo, App, Video Juego, Personal y Otros. Organiza tus cuentas por categoría.
                 </p>
               </div>
             </div>
@@ -1193,5 +1294,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="main.js"></script>
+    
+    <!-- Service Worker Registration para PWA/Offline -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('[App] Service Worker registrado exitosamente:', registration);
+              
+              // Detectar actualizaciones disponibles
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[App] Nueva versión disponible. Actualizar...');
+                    // Aquí podrías mostrar una notificación al usuario
+                  }
+                });
+              });
+            })
+            .catch((error) => {
+              console.error('[App] Error al registrar Service Worker:', error);
+            });
+        });
+      }
+      
+      // Detectar cambios en conexión
+      window.addEventListener('online', () => {
+        console.log('[App] Conexión a internet restaurada');
+        document.body.classList.remove('offline-mode');
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('[App] Sin conexión a internet - Modo offline activado');
+        document.body.classList.add('offline-mode');
+      });
+      
+      // Verificar estado inicial
+      if (!navigator.onLine) {
+        document.body.classList.add('offline-mode');
+      }
+    </script>
   </body>
 </html>

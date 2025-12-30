@@ -485,6 +485,19 @@ class VaultMail {
         });
     }
 
+    calculateDaysUntilDate(dateString) {
+        // Calcula los días restantes hasta una fecha específica
+        if (!dateString) return 0;
+        const parts = dateString.split('-');
+        const targetDate = new Date(parts[0], parseInt(parts[1]) - 1, parts[2]);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        targetDate.setHours(0, 0, 0, 0);
+        const timeDiff = targetDate.getTime() - today.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        return Math.max(daysDiff, 0); // Retorna 0 si la fecha ya pasó
+    }
+
     openHelpModal() {
         document.getElementById('helpModal').classList.add('active');
         // Set first tab as active
@@ -532,12 +545,13 @@ class VaultMail {
         const inactiveUntilValue = document.getElementById('inactiveUntil').value;
 
         // Validar que no exista otro correo igual (si es una nueva cuenta o si el email cambió)
+        let isDuplicate = false;
+        
         if (!this.currentEditingId) {
             // Es una nueva cuenta, verificar si el email ya existe
             const emailExists = this.accounts.some(a => a.email.toLowerCase() === email.toLowerCase());
             if (emailExists) {
-                this.showNotification('Esta cuenta de Gmail ya está registrada', 'error');
-                return;
+                isDuplicate = true;
             }
         } else {
             // Es una edición, verificar si el email cambió y si el nuevo email ya existe
@@ -545,12 +559,51 @@ class VaultMail {
             if (currentAccount.email.toLowerCase() !== email.toLowerCase()) {
                 const emailExists = this.accounts.some(a => a.email.toLowerCase() === email.toLowerCase());
                 if (emailExists) {
-                    this.showNotification('Esta cuenta de Gmail ya está registrada', 'error');
-                    return;
+                    isDuplicate = true;
                 }
             }
         }
 
+        // Si hay duplicado, mostrar modal de confirmación
+        if (isDuplicate) {
+            this.showDuplicateConfirmation(email);
+            return;
+        }
+
+        // Si no hay duplicado, proceder con el guardado
+        this.saveAccount(email, statusCheckbox, inactiveUntilValue);
+    }
+
+    showDuplicateConfirmation(email) {
+        // Set account name in modal
+        document.getElementById('duplicateConfirmAccountName').querySelector('strong').textContent = email;
+        
+        // Agregar información de categoría
+        const category = document.getElementById('category').value;
+        const categoryLabel = this.getCategoryLabel(category);
+        const categoryColor = this.getCategoryColor(category);
+        const categoryBadge = document.querySelector('.duplicate-confirm-category');
+        
+        if (categoryBadge) {
+            categoryBadge.innerHTML = `<i class="bi ${this.getCategoryIcon(category)}"></i> ${categoryLabel}`;
+            categoryBadge.style.backgroundColor = categoryColor;
+        }
+
+        // Show the confirmation modal
+        const duplicateModal = new bootstrap.Modal(document.getElementById('duplicateConfirmModal'));
+        duplicateModal.show();
+
+        // Handle confirm duplicate button
+        const confirmBtn = document.getElementById('confirmDuplicateBtn');
+        confirmBtn.onclick = () => {
+            const statusCheckbox = document.getElementById('status').checked;
+            const inactiveUntilValue = document.getElementById('inactiveUntil').value;
+            this.saveAccount(email, statusCheckbox, inactiveUntilValue);
+            duplicateModal.hide();
+        };
+    }
+
+    saveAccount(email, statusCheckbox, inactiveUntilValue) {
         const account = {
             id: this.currentEditingId || Date.now(),
             email: email,
@@ -607,8 +660,19 @@ class VaultMail {
         const account = this.accounts.find(a => a.id === this.currentEditingId);
         if (!account) return;
 
-        // Set account name in modal
+        // Set account name and category info in modal
+        const modalBody = document.querySelector('.delete-confirm-body');
         document.getElementById('deleteConfirmAccountName').querySelector('strong').textContent = account.email;
+        
+        // Agregar información de categoría
+        const categoryLabel = this.getCategoryLabel(account.category);
+        const categoryColor = this.getCategoryColor(account.category);
+        const categoryBadge = document.querySelector('.delete-confirm-category');
+        
+        if (categoryBadge) {
+            categoryBadge.innerHTML = `<i class="bi ${this.getCategoryIcon(account.category)}"></i> ${categoryLabel}`;
+            categoryBadge.style.backgroundColor = categoryColor;
+        }
 
         // Show the confirmation modal
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
@@ -1064,14 +1128,16 @@ class VaultMail {
         let inactiveUntilHtml = '';
         if (account.status === 'inactiva' && account.inactiveUntil) {
             const formattedInactiveDate = this.formatDateString(account.inactiveUntil);
-            inactiveUntilHtml = `<div class="account-inactive-until"><i class="bi bi-calendar"></i> Hasta: ${formattedInactiveDate}</div>`;
+            const daysUntilActive = this.calculateDaysUntilDate(account.inactiveUntil);
+            const daysText = daysUntilActive === 1 ? 'día' : 'días';
+            inactiveUntilHtml = `<div class="account-inactive-until"><i class="bi bi-calendar"></i> En uso dentro de ${daysUntilActive} ${daysText}</div>`;
         }
 
         return `
             <div class="account-card" data-id="${account.id}">
                 <div class="account-header">
                     <div class="account-email-section">
-                        <i class="bi bi-envelope account-email-icon"></i>
+                        <i class="bi ${this.getCategoryIcon(account.category)} account-email-icon"></i>
                         <div class="account-email">${this.escapeHtml(account.email)}</div>
                     </div>
                     <div class="account-actions">
@@ -1092,6 +1158,12 @@ class VaultMail {
                     ${account.isArchived ? '<span class="account-archived"><i class="bi bi-archive-fill"></i> Archivada</span>' : ''}
                 </div>
                 ${inactiveUntilHtml}
+                ${account.notes ? `
+                <div class="account-notes-preview">
+                    <i class="bi bi-sticky"></i>
+                    <span class="notes-text">${this.escapeHtml(account.notes.substring(0, 80))}${account.notes.length > 80 ? '...' : ''}</span>
+                </div>
+                ` : ''}
                 <div class="account-details">
                     <div class="account-detail">
                         <span class="detail-label">Email</span>
@@ -1320,13 +1392,44 @@ class VaultMail {
 
     getCategoryLabel(category) {
         const labels = {
-            'personal': 'Personal',
-            'trabajo': 'Trabajo',
+            'streaming': 'Streaming',
             'redes-sociales': 'Redes Sociales',
-            'compras': 'Compras',
+            'billetera-virtual': 'Billetera Virtual',
+            'trabajo': 'Trabajo',
+            'app': 'App',
+            'video-juego': 'Video Juego',
+            'personal': 'Personal',
             'otros': 'Otros'
         };
         return labels[category] || category;
+    }
+
+    getCategoryIcon(category) {
+        const icons = {
+            'streaming': 'bi-play-circle-fill',
+            'redes-sociales': 'bi-share-fill',
+            'billetera-virtual': 'bi-wallet-fill',
+            'trabajo': 'bi-briefcase-fill',
+            'app': 'bi-phone',
+            'video-juego': 'bi-controller',
+            'personal': 'bi-person-circle',
+            'otros': 'bi-box-seam'
+        };
+        return icons[category] || 'bi-envelope';
+    }
+
+    getCategoryColor(category) {
+        const colors = {
+            'streaming': '#E50914',           // Netflix Red
+            'redes-sociales': '#0EA5E9',      // Sky Blue (Social)
+            'billetera-virtual': '#10B981',   // Emerald (Money)
+            'trabajo': '#8B5CF6',             // Violet (Professional)
+            'app': '#F59E0B',                 // Amber (Apps)
+            'video-juego': '#EC4899',         // Pink (Gaming)
+            'personal': '#6366F1',            // Indigo (Personal)
+            'otros': '#6B7280'                // Gray (Others)
+        };
+        return colors[category] || '#7C3AED';
     }
 
     escapeHtml(text) {
