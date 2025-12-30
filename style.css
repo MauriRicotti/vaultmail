@@ -295,7 +295,7 @@ body.light-mode * {
   position: fixed;
   left: 0;
   top: 80px;
-  width: 240px;
+  width: 245px;
   height: calc(100vh - 80px);
   background-color: var(--bg-darker);
   border-right: 1px solid var(--border-color);
@@ -420,6 +420,28 @@ body.light-mode .sidebar-nav-item.active {
   text-align: center;
 }
 
+.category-counter {
+  display: inline;
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(124, 58, 237, 0.3);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+body.light-mode .category-counter {
+  background-color: rgba(91, 33, 182, 0.25);
+  color: #6b21a8;
+}
+
+.sidebar.collapsed .category-counter {
+  display: none;
+}
+
 .sidebar-stats {
   display: grid;
   grid-template-columns: 1fr;
@@ -541,6 +563,32 @@ body.light-mode .sidebar-collapse-btn:hover {
 
 body.light-mode .theme-toggle-sidebar:hover {
   background-color: rgba(91, 33, 182, 0.12);
+}
+
+/* Biometric Register Button */
+#biometricRegisterBtn {
+  display: none;
+}
+
+#biometricRegisterBtn.show {
+  display: flex;
+}
+
+#biometricRegisterBtn.registered {
+  color: var(--success-color);
+}
+
+#biometricRegisterBtn.registered i {
+  color: var(--success-color);
+}
+
+#biometricRegisterBtn.registered:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+}
+
+body.light-mode #biometricRegisterBtn.registered:hover {
+  background-color: rgba(16, 185, 129, 0.12);
 }
 
 /* Sidebar Collapsed Mode */
@@ -4324,6 +4372,74 @@ body.light-mode .login-screen * {
 .login-screen-btn-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.login-screen-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.login-screen-divider::before,
+.login-screen-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(124, 58, 237, 0.2);
+}
+
+.login-screen-btn-biometric {
+  width: 100%;
+  padding: 13px 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.15),
+    rgba(124, 58, 237, 0.08)
+  );
+  color: var(--primary-color);
+  border: 2px solid rgba(124, 58, 237, 0.3);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.1);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-screen-btn-biometric:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.25),
+    rgba(124, 58, 237, 0.15)
+  );
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
+}
+
+.login-screen-btn-biometric:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+}
+
+.login-screen-btn-biometric:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-screen-btn-biometric i {
+  font-size: 1.2rem;
 }
 
 .login-screen-footer {

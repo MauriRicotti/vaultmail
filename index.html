@@ -147,6 +147,19 @@
                 <i class="bi bi-arrow-right"></i>
               </button>
 
+              <div class="login-screen-divider">
+                <span>o</span>
+              </div>
+
+              <button
+                type="button"
+                class="login-screen-btn-biometric"
+                id="biometricBtn"
+              >
+                <i class="bi bi-fingerprint"></i>
+                <span>Acceder mediante huella</span>
+              </button>
+
               <div
                 id="loginError"
                 class="login-screen-alert login-screen-alert-error d-none"
@@ -294,6 +307,7 @@
             >
               <i class="bi bi-play-circle-fill"></i>
               <span class="sidebar-label">Streaming</span>
+              <span class="category-counter" data-category="streaming">0</span>
             </button>
             <button
               class="sidebar-nav-item"
@@ -304,6 +318,9 @@
             >
               <i class="bi bi-share"></i>
               <span class="sidebar-label">Redes Sociales</span>
+              <span class="category-counter" data-category="redes-sociales"
+                >0</span
+              >
             </button>
             <button
               class="sidebar-nav-item"
@@ -314,6 +331,9 @@
             >
               <i class="bi bi-wallet-fill"></i>
               <span class="sidebar-label">Billetera Virtual</span>
+              <span class="category-counter" data-category="billetera-virtual"
+                >0</span
+              >
             </button>
             <button
               class="sidebar-nav-item"
@@ -324,6 +344,7 @@
             >
               <i class="bi bi-briefcase-fill"></i>
               <span class="sidebar-label">Trabajo</span>
+              <span class="category-counter" data-category="trabajo">0</span>
             </button>
             <button
               class="sidebar-nav-item"
@@ -334,6 +355,7 @@
             >
               <i class="bi bi-phone"></i>
               <span class="sidebar-label">App</span>
+              <span class="category-counter" data-category="app">0</span>
             </button>
             <button
               class="sidebar-nav-item"
@@ -344,6 +366,9 @@
             >
               <i class="bi bi-controller"></i>
               <span class="sidebar-label">Video Juego</span>
+              <span class="category-counter" data-category="video-juego"
+                >0</span
+              >
             </button>
             <button
               class="sidebar-nav-item"
@@ -354,6 +379,7 @@
             >
               <i class="bi bi-person-circle"></i>
               <span class="sidebar-label">Personal</span>
+              <span class="category-counter" data-category="personal">0</span>
             </button>
             <button
               class="sidebar-nav-item"
@@ -364,6 +390,7 @@
             >
               <i class="bi bi-box-seam"></i>
               <span class="sidebar-label">Otros</span>
+              <span class="category-counter" data-category="otros">0</span>
             </button>
           </nav>
         </div>
@@ -451,6 +478,16 @@
             </button>
           </nav>
           <div class="sidebar-actions-divider"></div>
+          <button
+            class="theme-toggle-sidebar"
+            id="biometricRegisterBtn"
+            data-bs-toggle="tooltip"
+            data-bs-placement="right"
+            data-bs-title="Registrar huella digital"
+          >
+            <i class="bi bi-fingerprint"></i>
+            <span>Registrar Huella</span>
+          </button>
           <button
             class="theme-toggle-sidebar"
             id="themeToggleSidebar"
@@ -548,8 +585,8 @@
           <div class="stat-label">En desuso</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="totalCategories">5</div>
-          <div class="stat-label">Categorías</div>
+          <div class="stat-value" id="totalFavorites">0</div>
+          <div class="stat-label">Favoritas</div>
         </div>
       </div>
 
