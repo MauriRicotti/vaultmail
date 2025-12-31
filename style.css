@@ -424,7 +424,6 @@ body.light-mode .sidebar-nav-item.active {
   display: inline;
   margin-left: auto;
   padding: 0.25rem 0.5rem;
-  background-color: rgba(124, 58, 237, 0.3);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -434,7 +433,6 @@ body.light-mode .sidebar-nav-item.active {
 }
 
 body.light-mode .category-counter {
-  background-color: rgba(91, 33, 182, 0.25);
   color: #6b21a8;
 }
 
@@ -2284,7 +2282,6 @@ body.light-mode .theme-toggle-sidebar:hover {
 
 /* Footer */
 .footer {
-  background-color: var(--bg-darker);
   border-top: 1px solid var(--border-color);
   margin-top: 4rem;
   margin-left: 280px;
