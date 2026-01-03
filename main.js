@@ -9,6 +9,13 @@ class VaultMail {
         this.viewMode = 'cards'; // 'cards' or 'table'
         this.currentPage = 1;
         this.itemsPerPage = 6;
+        
+        // Swipe gesture properties
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.touchEndX = 0;
+        this.touchEndY = 0;
+        
         this.initAuth();
     }
 
@@ -295,6 +302,7 @@ class VaultMail {
         this.loadAccounts();
         this.checkAndUpdateInactiveAccounts(); // Check on load
         this.setupEventListeners();
+        this.setupSwipeGestures();
         this.setupKeyboardShortcuts();
         this.loadSidebarState();
         this.renderAccounts();
@@ -1848,6 +1856,46 @@ class VaultMail {
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.remove('open');
         overlay.classList.remove('open');
+    }
+
+    setupSwipeGestures() {
+        // Detect touch start
+        document.addEventListener('touchstart', (e) => {
+            this.touchStartX = e.changedTouches[0].screenX;
+            this.touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        // Detect touch end and perform swipe action
+        document.addEventListener('touchend', (e) => {
+            this.touchEndX = e.changedTouches[0].screenX;
+            this.touchEndY = e.changedTouches[0].screenY;
+            this.handleSwipe();
+        }, false);
+    }
+
+    handleSwipe() {
+        const minSwipeDistance = 50; // Minimum pixels for a swipe to be detected
+        const maxVerticalDistance = 100; // Maximum vertical movement allowed for horizontal swipe
+        
+        const horizontalDistance = this.touchEndX - this.touchStartX;
+        const verticalDistance = Math.abs(this.touchEndY - this.touchStartY);
+
+        // Only consider it a swipe if vertical movement is minimal (horizontal swipe)
+        if (verticalDistance > maxVerticalDistance) {
+            return;
+        }
+
+        const sidebar = document.getElementById('sidebar');
+        const isSidebarOpen = sidebar.classList.contains('open');
+
+        // Swipe right (positive distance) - Open sidebar
+        if (horizontalDistance > minSwipeDistance && !isSidebarOpen) {
+            this.toggleSidebar();
+        }
+        // Swipe left (negative distance) - Close sidebar
+        else if (horizontalDistance < -minSwipeDistance && isSidebarOpen) {
+            this.closeSidebar();
+        }
     }
 
     handleSidebarViewClick(e) {
