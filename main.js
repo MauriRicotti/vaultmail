@@ -561,7 +561,7 @@ class VaultMail {
         document.getElementById('inactiveUntil').value = '';
         
         document.querySelector('.modal-header h2').textContent = 'Agregar Nueva Cuenta';
-        document.querySelector('.modal-description').textContent = 'Completa los datos de tu cuenta de Gmail';
+        document.querySelector('.modal-description').textContent = 'Completa los datos de tu cuenta';
         // Mostrar el sufijo @gmail.com cuando se abre el modal
         const emailSuffix = document.getElementById('emailSuffix');
         if (emailSuffix) {
@@ -582,44 +582,68 @@ class VaultMail {
     handleFormSubmit(e) {
         e.preventDefault();
 
+        const username = document.getElementById('username').value.trim();
         let email = document.getElementById('email').value.trim();
         
+        // Validar que al menos uno de los dos esté completado
+        if (!username && !email) {
+            this.showNotification('Debes completar al menos el nombre de usuario o el correo electrónico');
+            return;
+        }
+        
         // Si el email no contiene @, agregar @gmail.com automáticamente
-        if (!email.includes('@')) {
+        if (email && !email.includes('@')) {
             email = email + '@gmail.com';
         }
         
         const statusCheckbox = document.getElementById('status').checked;
         const inactiveUntilValue = document.getElementById('inactiveUntil').value;
 
-        // Validar que no exista otro correo igual (si es una nueva cuenta o si el email cambió)
+        // Validar que no exista otro registro igual (si es una nueva cuenta o si cambió)
         let isDuplicate = false;
+        let duplicateIdentifier = email || username;
         
         if (!this.currentEditingId) {
-            // Es una nueva cuenta, verificar si el email ya existe
-            const emailExists = this.accounts.some(a => a.email.toLowerCase() === email.toLowerCase());
-            if (emailExists) {
-                isDuplicate = true;
-            }
-        } else {
-            // Es una edición, verificar si el email cambió y si el nuevo email ya existe
-            const currentAccount = this.accounts.find(a => a.id === this.currentEditingId);
-            if (currentAccount.email.toLowerCase() !== email.toLowerCase()) {
-                const emailExists = this.accounts.some(a => a.email.toLowerCase() === email.toLowerCase());
+            // Es una nueva cuenta, verificar si el email o username ya existe
+            if (email) {
+                const emailExists = this.accounts.some(a => a.email && a.email.toLowerCase() === email.toLowerCase());
                 if (emailExists) {
                     isDuplicate = true;
+                }
+            }
+            if (!isDuplicate && username) {
+                const usernameExists = this.accounts.some(a => a.username && a.username.toLowerCase() === username.toLowerCase());
+                if (usernameExists) {
+                    isDuplicate = true;
+                    duplicateIdentifier = username;
+                }
+            }
+        } else {
+            // Es una edición, verificar si el email o username cambiaron y si los nuevos valores ya existen
+            const currentAccount = this.accounts.find(a => a.id === this.currentEditingId);
+            if (email && currentAccount.email && currentAccount.email.toLowerCase() !== email.toLowerCase()) {
+                const emailExists = this.accounts.some(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+                if (emailExists) {
+                    isDuplicate = true;
+                }
+            }
+            if (!isDuplicate && username && currentAccount.username && currentAccount.username.toLowerCase() !== username.toLowerCase()) {
+                const usernameExists = this.accounts.some(a => a.username && a.username.toLowerCase() === username.toLowerCase());
+                if (usernameExists) {
+                    isDuplicate = true;
+                    duplicateIdentifier = username;
                 }
             }
         }
 
         // Si hay duplicado, mostrar modal de confirmación
         if (isDuplicate) {
-            this.showDuplicateConfirmation(email);
+            this.showDuplicateConfirmation(duplicateIdentifier);
             return;
         }
 
         // Si no hay duplicado, proceder con el guardado
-        this.saveAccount(email, statusCheckbox, inactiveUntilValue);
+        this.saveAccount(username, email, statusCheckbox, inactiveUntilValue);
     }
 
     showDuplicateConfirmation(email) {
@@ -644,19 +668,23 @@ class VaultMail {
         // Handle confirm duplicate button
         const confirmBtn = document.getElementById('confirmDuplicateBtn');
         confirmBtn.onclick = () => {
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
             const statusCheckbox = document.getElementById('status').checked;
             const inactiveUntilValue = document.getElementById('inactiveUntil').value;
-            this.saveAccount(email, statusCheckbox, inactiveUntilValue);
+            this.saveAccount(username, email, statusCheckbox, inactiveUntilValue);
             duplicateModal.hide();
         };
     }
 
-    saveAccount(email, statusCheckbox, inactiveUntilValue) {
-        // Sanitizar email: remover espacios y convertir a minúsculas
-        email = email.replace(/\s+/g, '').toLowerCase();
+    saveAccount(username, email, statusCheckbox, inactiveUntilValue) {
+        // Sanitizar username y email: remover espacios y convertir a minúsculas
+        username = username ? username.replace(/\s+/g, '').toLowerCase() : null;
+        email = email ? email.replace(/\s+/g, '').toLowerCase() : null;
         
         const account = {
             id: this.currentEditingId || Date.now(),
+            username: username,
             email: email,
             password: document.getElementById('password').value,
             notes: document.getElementById('notes').value,
@@ -686,7 +714,8 @@ class VaultMail {
                 const statusFilter = document.getElementById('statusFilter').value.trim();
                 
                 const matchesSearch = !searchTerm || 
-                                    account.email.toLowerCase().includes(searchTerm) ||
+                                    (account.email && account.email.toLowerCase().includes(searchTerm)) ||
+                                    (account.username && account.username.toLowerCase().includes(searchTerm)) ||
                                     (account.notes && account.notes.toLowerCase().includes(searchTerm));
                 const matchesCategory = !categoryFilter || account.category === categoryFilter;
                 const matchesStatus = !statusFilter || account.status === statusFilter;
@@ -757,7 +786,8 @@ class VaultMail {
         const account = this.accounts.find(a => a.id === this.currentEditingId);
         this.currentEditingId = account.id;
 
-        document.getElementById('email').value = account.email;
+        document.getElementById('username').value = account.username || '';
+        document.getElementById('email').value = account.email || '';
         document.getElementById('password').value = account.password;
         document.getElementById('notes').value = account.notes;
         document.getElementById('category').value = account.category;
@@ -803,7 +833,8 @@ class VaultMail {
 
         this.filteredAccounts = this.accounts.filter(account => {
             const matchesSearch = !searchTerm || 
-                                account.email.toLowerCase().includes(searchTerm) ||
+                                (account.email && account.email.toLowerCase().includes(searchTerm)) ||
+                                (account.username && account.username.toLowerCase().includes(searchTerm)) ||
                                 (account.notes && account.notes.toLowerCase().includes(searchTerm));
             const matchesCategory = !categoryFilter || account.category === categoryFilter;
             const matchesStatus = !statusFilter || account.status === statusFilter;
@@ -1130,9 +1161,19 @@ class VaultMail {
         return `
             <tr class="table-row" data-id="${account.id}">
                 <td>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="bi bi-envelope" style="color: var(--primary-color);"></i>
-                        <span class="table-email">${this.escapeHtml(account.email)}</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-direction: column; align-items: flex-start;">
+                        ${account.username ? `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="bi bi-person" style="color: var(--primary-color);"></i>
+                            <span class="table-username">${this.escapeHtml(account.username)}</span>
+                        </div>
+                        ` : ''}
+                        ${account.email ? `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="bi bi-envelope" style="color: var(--primary-color);"></i>
+                            <span class="table-email">${this.escapeHtml(account.email)}</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </td>
                 <td>
@@ -1153,9 +1194,11 @@ class VaultMail {
                         <button type="button" class="btn-action btn-table-favorite" data-id="${account.id}" title="${account.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}">
                             <i class="bi bi-star${account.isFavorite ? '-fill' : ''}"></i>
                         </button>
+                        ${account.email ? `
                         <button type="button" class="btn-action btn-table-gmail" data-email="${this.escapeHtml(account.email)}" title="Abrir en Gmail">
                             <i class="bi bi-box-arrow-up-right"></i>
                         </button>
+                        ` : ''}
                         <button type="button" class="btn-action btn-table-archive" data-id="${account.id}" title="${account.isArchived ? 'Desarchivar' : 'Archivar'}">
                             <i class="bi bi-archive${account.isArchived ? '-fill' : ''}"></i>
                         </button>
@@ -1189,7 +1232,7 @@ class VaultMail {
                 <div class="account-header">
                     <div class="account-email-section">
                         <i class="bi ${this.getCategoryIcon(account.category)} account-email-icon"></i>
-                        <div class="account-email">${this.escapeHtml(account.email)}</div>
+                        <div class="account-email">${this.escapeHtml(account.email || account.username || 'Sin datos')}</div>
                     </div>
                     <div class="account-actions">
                         <button type="button" class="btn-action btn-favorite" data-id="${account.id}" title="${account.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}">
@@ -1216,6 +1259,16 @@ class VaultMail {
                 </div>
                 ` : ''}
                 <div class="account-details">
+                    ${account.username ? `
+                    <div class="account-detail">
+                        <span class="detail-label">Usuario</span>
+                        <span class="detail-value">${this.escapeHtml(account.username)}</span>
+                        <button type="button" class="btn-copy" data-text="${this.escapeHtml(account.username)}" title="Copiar">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    ` : ''}
+                    ${account.email ? `
                     <div class="account-detail">
                         <span class="detail-label">Email</span>
                         <span class="detail-value">${this.escapeHtml(account.email)}</span>
@@ -1223,6 +1276,7 @@ class VaultMail {
                             <i class="bi bi-clipboard"></i>
                         </button>
                     </div>
+                    ` : ''}
                     <div class="account-detail">
                         <span class="detail-label">Contraseña</span>
                         <span class="detail-value password-field" data-password="${this.escapeHtml(account.password)}">${this.showPasswordsGlobally ? this.escapeHtml(account.password) : '••••••••'}</span>
@@ -1232,9 +1286,11 @@ class VaultMail {
                     </div>
                 </div>
                 <div class="account-actions-footer">
+                    ${account.email ? `
                     <button type="button" class="btn-action btn-gmail" data-email="${this.escapeHtml(account.email)}" title="Abrir en Gmail">
                         <i class="bi bi-box-arrow-up-right"></i>
                     </button>
+                    ` : ''}
                     <button type="button" class="btn-action btn-archive" data-id="${account.id}" title="${account.isArchived ? 'Desarchivar' : 'Archivar'}">
                         <i class="bi bi-archive${account.isArchived ? '-fill' : ''}"></i>
                     </button>
@@ -1261,10 +1317,18 @@ class VaultMail {
         });
 
         const content = `
+            ${account.username ? `
+            <div class="account-detail-item">
+                <div class="account-detail-label">Nombre de usuario</div>
+                <div class="account-detail-value">${this.escapeHtml(account.username)}</div>
+            </div>
+            ` : ''}
+            ${account.email ? `
             <div class="account-detail-item">
                 <div class="account-detail-label">Correo electrónico</div>
                 <div class="account-detail-value">${this.escapeHtml(account.email)}</div>
             </div>
+            ` : ''}
             <div class="account-detail-item">
                 <div class="account-detail-label">Contraseña</div>
                 <div class="account-detail-value" id="passwordField">••••••••
@@ -1626,18 +1690,114 @@ class VaultMail {
             return;
         }
 
-        const dataToExport = JSON.stringify(this.accounts, null, 2);
-        const blob = new Blob([dataToExport], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `vaultmail-backup-${new Date().getTime()}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        this.showNotification('Cuentas exportadas exitosamente');
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Configuración
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let yPosition = margin;
+            
+            // Título
+            doc.setFontSize(18);
+            doc.setTextColor(113, 84, 234); // Color primario
+            doc.text('VaultMail - Copia de Seguridad', margin, yPosition);
+            yPosition += 10;
+            
+            // Fecha
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            doc.text(`Fecha de exportación: ${dateStr}`, margin, yPosition);
+            yPosition += 8;
+            
+            // Línea separadora
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 8;
+            
+            // Información de cada cuenta
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+            
+            this.accounts.forEach((account, index) => {
+                // Verificar si necesitamos nueva página
+                if (yPosition > pageHeight - margin - 20) {
+                    doc.addPage();
+                    yPosition = margin;
+                }
+                
+                // Número de cuenta
+                doc.setFont(undefined, 'bold');
+                doc.text(`Cuenta ${index + 1}`, margin, yPosition);
+                yPosition += 6;
+                
+                // Detalles
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(10);
+                
+                if (account.username) {
+                    doc.text(`Usuario: ${account.username}`, margin + 5, yPosition);
+                    yPosition += 5;
+                }
+                
+                if (account.email) {
+                    doc.text(`Email: ${account.email}`, margin + 5, yPosition);
+                    yPosition += 5;
+                }
+                
+                doc.text(`Contraseña: ${account.password}`, margin + 5, yPosition);
+                yPosition += 5;
+                
+                if (account.notes) {
+                    doc.text(`Notas: ${account.notes}`, margin + 5, yPosition);
+                    yPosition += 5;
+                }
+                
+                doc.text(`Categoría: ${this.getCategoryLabel(account.category)}`, margin + 5, yPosition);
+                yPosition += 5;
+                
+                doc.text(`Estado: ${account.status === 'activa' ? 'En uso' : 'En desuso'}`, margin + 5, yPosition);
+                yPosition += 7;
+                
+                // Línea separadora entre cuentas
+                doc.setDrawColor(220, 220, 220);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 6;
+            });
+            
+            // Pie de página
+            const totalPages = doc.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(9);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Página ${i} de ${totalPages}`,
+                    pageWidth / 2,
+                    pageHeight - 10,
+                    { align: 'center' }
+                );
+            }
+            
+            // Descargar PDF
+            const filename = `vaultmail-backup-${new Date().getTime()}.pdf`;
+            doc.save(filename);
+            
+            this.showNotification('Cuentas exportadas a PDF exitosamente');
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            this.showNotification('Error al exportar a PDF: ' + error.message, 'error');
+        }
     }
 
     importAccounts(event) {
@@ -1645,49 +1805,153 @@ class VaultMail {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
-                const importedAccounts = JSON.parse(e.target.result);
+                const fileType = file.type;
                 
-                if (!Array.isArray(importedAccounts)) {
-                    throw new Error('El archivo no contiene un array válido');
+                if (fileType === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    // Importar desde PDF
+                    await this.importFromPDF(e.target.result);
+                } else if (fileType === 'application/json' || file.name.endsWith('.json')) {
+                    // Importar desde JSON (para compatibilidad hacia atrás)
+                    this.importFromJSON(e.target.result);
+                } else {
+                    throw new Error('Formato de archivo no válido. Use PDF o JSON.');
                 }
-
-                // Validate accounts structure
-                const isValid = importedAccounts.every(acc => 
-                    acc.email && acc.password && acc.category && typeof acc.id === 'number'
-                );
-
-                if (!isValid) {
-                    throw new Error('El archivo contiene un formato inválido');
-                }
-
-                // Merge with existing accounts (avoid duplicates by ID)
-                const existingIds = new Set(this.accounts.map(a => a.id));
-                let importedCount = 0;
-
-                importedAccounts.forEach(importedAccount => {
-                    if (!existingIds.has(importedAccount.id)) {
-                        this.accounts.push({
-                            ...importedAccount,
-                            isFavorite: importedAccount.isFavorite || false
-                        });
-                        importedCount++;
-                    }
-                });
-
-                this.saveAccounts();
-                this.renderAccounts();
-                this.updateStats();
-                this.showNotification(`${importedCount} cuenta(s) importada(s) exitosamente`);
             } catch (error) {
                 this.showNotification(`Error al importar: ${error.message}`, 'error');
             }
         };
 
-        reader.readAsText(file);
+        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.readAsText(file);
+        }
+        
         // Reset file input
         event.target.value = '';
+    }
+
+    async importFromPDF(arrayBuffer) {
+        const pdfjsLib = window.pdfjsLib;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+        let extractedText = '';
+
+        // Extraer texto de todas las páginas
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            extractedText += textContent.items.map(item => item.str).join(' ') + '\n';
+        }
+
+        // Parsear el texto extraído
+        const importedAccounts = this.parseAccountsFromPDF(extractedText);
+        
+        if (importedAccounts.length === 0) {
+            throw new Error('No se encontraron cuentas válidas en el PDF');
+        }
+
+        // Merge con cuentas existentes
+        const existingIds = new Set(this.accounts.map(a => a.id));
+        let importedCount = 0;
+
+        importedAccounts.forEach(importedAccount => {
+            if (!existingIds.has(importedAccount.id)) {
+                this.accounts.push(importedAccount);
+                importedCount++;
+            }
+        });
+
+        this.saveAccounts();
+        this.renderAccounts();
+        this.updateStats();
+        this.showNotification(`${importedCount} cuenta(s) importada(s) exitosamente desde PDF`);
+    }
+
+    importFromJSON(jsonString) {
+        const importedAccounts = JSON.parse(jsonString);
+        
+        if (!Array.isArray(importedAccounts)) {
+            throw new Error('El archivo no contiene un array válido');
+        }
+
+        // Validate accounts structure
+        const isValid = importedAccounts.every(acc => 
+            (acc.email || acc.username) && acc.password && acc.category && typeof acc.id === 'number'
+        );
+
+        if (!isValid) {
+            throw new Error('El archivo contiene un formato inválido');
+        }
+
+        // Merge with existing accounts (avoid duplicates by ID)
+        const existingIds = new Set(this.accounts.map(a => a.id));
+        let importedCount = 0;
+
+        importedAccounts.forEach(importedAccount => {
+            if (!existingIds.has(importedAccount.id)) {
+                this.accounts.push({
+                    ...importedAccount,
+                    isFavorite: importedAccount.isFavorite || false,
+                    isArchived: importedAccount.isArchived || false
+                });
+                importedCount++;
+            }
+        });
+
+        this.saveAccounts();
+        this.renderAccounts();
+        this.updateStats();
+        this.showNotification(`${importedCount} cuenta(s) importada(s) exitosamente desde JSON`);
+    }
+
+    parseAccountsFromPDF(text) {
+        // Expresiones regulares para extraer información
+        const accountPattern = /Cuenta\s+(\d+)([\s\S]*?)(?=Cuenta\s+\d+|$)/g;
+        const importedAccounts = [];
+        let match;
+
+        while ((match = accountPattern.exec(text)) !== null) {
+            const accountText = match[2];
+            
+            const usernameMatch = accountText.match(/Usuario:\s*(.+?)(?:\n|Email:|Contraseña:|$)/);
+            const emailMatch = accountText.match(/Email:\s*(.+?)(?:\n|Contraseña:|$)/);
+            const passwordMatch = accountText.match(/Contraseña:\s*(.+?)(?:\n|Notas:|Categoría:|$)/);
+            const notesMatch = accountText.match(/Notas:\s*(.+?)(?:\n|Categoría:|$)/);
+            const categoryMatch = accountText.match(/Categoría:\s*(.+?)(?:\n|Estado:|$)/);
+            const statusMatch = accountText.match(/Estado:\s*(.+?)(?:\n|$)/);
+
+            if (passwordMatch) {
+                const newAccount = {
+                    id: Date.now() + Math.random(),
+                    username: usernameMatch ? usernameMatch[1].trim() : null,
+                    email: emailMatch ? emailMatch[1].trim() : null,
+                    password: passwordMatch[1].trim(),
+                    notes: notesMatch ? notesMatch[1].trim() : '',
+                    category: 'personal',
+                    status: statusMatch && statusMatch[1].includes('En desuso') ? 'inactiva' : 'activa',
+                    inactiveUntil: null,
+                    createdAt: new Date().toISOString(),
+                    isFavorite: false,
+                    isArchived: false
+                };
+                
+                // Mapear categoría si es posible
+                const catText = categoryMatch ? categoryMatch[1].trim().toLowerCase() : '';
+                const categories = ['streaming', 'redes-sociales', 'billetera-virtual', 'trabajo', 'app', 'video-juego', 'personal', 'otros'];
+                const foundCategory = categories.find(cat => catText.includes(cat));
+                if (foundCategory) {
+                    newAccount.category = foundCategory;
+                }
+
+                importedAccounts.push(newAccount);
+            }
+        }
+
+        return importedAccounts;
     }
 
     toggleShowOnlyFavorites() {
