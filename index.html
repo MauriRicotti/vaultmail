@@ -489,7 +489,7 @@
       </div>
 
       <div class="sidebar-footer">
-        <span class="sidebar-footer-text">VaultMail © 2025</span>
+        <span class="sidebar-footer-text">VaultMail © 2026</span>
       </div>
     </aside>
 
@@ -1252,7 +1252,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2025 VaultMail. Todos los derechos reservados.</p>
+          <p>&copy; 2026 VaultMail. Todos los derechos reservados.</p>
           <p>
             Creado por
             <a
@@ -1321,5 +1321,35 @@
         document.body.classList.add("offline-mode");
       }
     </script>
+
+    <!-- Notificación de sesión abierta -->
+    <div id="sessionNotification" class="session-notification">
+      <button
+        id="closeSessionNotificationBtn"
+        class="session-notification-close-btn"
+        title="Cerrar"
+      >
+        <i class="bi bi-x"></i>
+      </button>
+      <div class="session-notification-content">
+        <div class="session-notification-header">
+          <i class="bi bi-exclamation-circle"></i>
+          <h3>Sesión Abierta</h3>
+        </div>
+        <p class="session-notification-message">
+          Tu cuenta está abierta hace <span id="sessionTime">0 minutos</span>.
+          Asegúrate de cerrar sesión correctamente para proteger tus
+          contraseñas.
+        </p>
+        <div class="session-notification-actions">
+          <button
+            id="closeSessionNotification"
+            class="session-notification-btn-close"
+          >
+            No volver a mostrar por 24hs
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

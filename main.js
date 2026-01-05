@@ -287,6 +287,10 @@ class VaultMail {
 
     performLogout() {
         localStorage.removeItem('vaultmail_authenticated');
+        sessionStorage.removeItem('vaultmail_session_start_time');
+        if (this.sessionTimeInterval) {
+            clearInterval(this.sessionTimeInterval);
+        }
         document.getElementById('logoutConfirmModal').classList.add('d-none');
         document.getElementById('loginScreen').classList.remove('d-none');
         document.body.style.overflow = 'hidden';
@@ -308,6 +312,7 @@ class VaultMail {
         this.renderAccounts();
         this.updateStats();
         this.initializeTooltips(); // Initialize tooltips only if sidebar is collapsed
+        this.initSessionNotification(); // Initialize session notification
     }
 
     setupEventListeners() {
@@ -1331,13 +1336,31 @@ class VaultMail {
             ` : ''}
             <div class="account-detail-item">
                 <div class="account-detail-label">Contraseña</div>
-                <div class="account-detail-value" id="passwordField">••••••••
-                    <button type="button" class="btn btn-secondary" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;" id="togglePassword">Mostrar</button>
+                <div class="account-detail-password-group">
+                    <div class="account-detail-value" id="passwordField">••••••••</div>
+                    <button type="button" class="btn-password-toggle" id="togglePassword" title="Mostrar/Ocultar contraseña">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
+                <input 
+                    type="password"
+                    id="editPassword"
+                    class="account-detail-input"
+                    placeholder="Nueva contraseña (dejar en blanco para no cambiar)"
+                    style="margin-top: 0.5rem;"
+                />
             </div>
             <div class="account-detail-item">
                 <div class="account-detail-label">Categoría</div>
-                <div class="account-detail-value">${this.getCategoryLabel(account.category)}</div>
+                <select id="editCategory" class="account-detail-input">
+                    <option value="otros" ${account.category === 'otros' ? 'selected' : ''}>Otros</option>
+                    <option value="email" ${account.category === 'email' ? 'selected' : ''}>Email</option>
+                    <option value="redes_sociales" ${account.category === 'redes_sociales' ? 'selected' : ''}>Redes Sociales</option>
+                    <option value="trabajo" ${account.category === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+                    <option value="finanzas" ${account.category === 'finanzas' ? 'selected' : ''}>Finanzas</option>
+                    <option value="entretenimiento" ${account.category === 'entretenimiento' ? 'selected' : ''}>Entretenimiento</option>
+                    <option value="educacion" ${account.category === 'educacion' ? 'selected' : ''}>Educación</option>
+                </select>
             </div>
             <div class="account-detail-item">
                 <div class="account-detail-label">Estado</div>
@@ -1389,25 +1412,20 @@ class VaultMail {
         // Add toggle password functionality
         let isPasswordVisible = false;
         const toggleBtn = document.getElementById('togglePassword');
+        const passwordField = document.getElementById('passwordField');
+        const icon = toggleBtn.querySelector('i');
+        
         toggleBtn.addEventListener('click', (e) => {
             e.preventDefault();
             isPasswordVisible = !isPasswordVisible;
-            const passwordField = document.getElementById('passwordField');
             if (isPasswordVisible) {
-                passwordField.textContent = this.escapeHtml(account.password) + ' ';
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'btn btn-secondary';
-                btn.style.marginLeft = '0.5rem';
-                btn.style.padding = '0.25rem 0.5rem';
-                btn.style.fontSize = '0.8rem';
-                btn.textContent = 'Ocultar';
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    isPasswordVisible = false;
-                    document.getElementById('passwordField').innerHTML = '••••••••<button type="button" class="btn btn-secondary" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Mostrar</button>';
-                });
-                passwordField.appendChild(btn);
+                passwordField.textContent = this.escapeHtml(account.password);
+                icon.className = 'bi bi-eye-slash';
+                toggleBtn.setAttribute('title', 'Ocultar contraseña');
+            } else {
+                passwordField.textContent = '••••••••';
+                icon.className = 'bi bi-eye';
+                toggleBtn.setAttribute('title', 'Mostrar contraseña');
             }
         });
 
@@ -1420,6 +1438,8 @@ class VaultMail {
 
         const statusCheckbox = document.getElementById('viewStatus');
         const newStatus = statusCheckbox.checked ? 'activa' : 'inactiva';
+        const newPassword = document.getElementById('editPassword').value;
+        const newCategory = document.getElementById('editCategory').value;
         const inactiveUntilInput = document.getElementById('viewInactiveUntil');
         const inactiveUntilValue = inactiveUntilInput ? inactiveUntilInput.value : null;
 
@@ -1441,12 +1461,24 @@ class VaultMail {
         // Update account
         account.status = newStatus;
         account.inactiveUntil = newStatus === 'inactiva' && inactiveUntilValue ? inactiveUntilValue : null;
+        
+        // Update password if provided
+        if (newPassword.trim()) {
+            account.password = newPassword;
+        }
+        
+        // Update category
+        account.category = newCategory;
 
         // Update filtered accounts if exists
         const filteredAccount = this.filteredAccounts.find(a => a.id === this.currentEditingId);
         if (filteredAccount) {
             filteredAccount.status = newStatus;
             filteredAccount.inactiveUntil = account.inactiveUntil;
+            if (newPassword.trim()) {
+                filteredAccount.password = newPassword;
+            }
+            filteredAccount.category = newCategory;
         }
 
         this.saveAccounts();
@@ -2352,6 +2384,77 @@ class VaultMail {
             const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
             if (tooltip) {
                 tooltip.hide();
+            }
+        });
+    }
+
+    initSessionNotification() {
+        // Check if notification should be shown
+        const notificationDismissedTime = localStorage.getItem('vaultmail_notification_dismissed_time');
+        const now = Date.now();
+        
+        // Check if 24 hours have passed since dismissal
+        if (notificationDismissedTime && (now - parseInt(notificationDismissedTime)) < 24 * 60 * 60 * 1000) {
+            // Don't show notification yet
+            return;
+        }
+        
+        // Get or create session start time
+        let sessionStartTime = sessionStorage.getItem('vaultmail_session_start_time');
+        if (!sessionStartTime) {
+            sessionStartTime = Date.now().toString();
+            sessionStorage.setItem('vaultmail_session_start_time', sessionStartTime);
+        }
+        
+        const notification = document.getElementById('sessionNotification');
+        const sessionTimeElement = document.getElementById('sessionTime');
+        const closeBtn = document.getElementById('closeSessionNotification');
+        
+        // Show notification with animation
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 500);
+        
+        // Update session time periodically
+        const updateSessionTime = () => {
+            const elapsed = Date.now() - parseInt(sessionStartTime);
+            const minutes = Math.floor(elapsed / 60000);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                const remainingMinutes = minutes % 60;
+                sessionTimeElement.textContent = `${hours} hora${hours > 1 ? 's' : ''} ${remainingMinutes} minuto${remainingMinutes !== 1 ? 's' : ''}`;
+            } else {
+                sessionTimeElement.textContent = `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+            }
+        };
+        
+        // Initial update
+        updateSessionTime();
+        
+        // Update every minute
+        this.sessionTimeInterval = setInterval(updateSessionTime, 60000);
+        
+        // Close X button handler - hides notification temporarily
+        const closeXBtn = document.getElementById('closeSessionNotificationBtn');
+        if (closeXBtn) {
+            closeXBtn.addEventListener('click', () => {
+                notification.classList.remove('show');
+                // Clear interval
+                if (this.sessionTimeInterval) {
+                    clearInterval(this.sessionTimeInterval);
+                }
+            });
+        }
+        
+        // Close button handler - hides for 24 hours
+        closeBtn.addEventListener('click', () => {
+            notification.classList.remove('show');
+            // Save dismissal time for 24 hours
+            localStorage.setItem('vaultmail_notification_dismissed_time', Date.now().toString());
+            // Clear interval
+            if (this.sessionTimeInterval) {
+                clearInterval(this.sessionTimeInterval);
             }
         });
     }
