@@ -10,6 +10,7 @@ class VaultMail {
         this.currentPage = 1;
         this.itemsPerPage = 6;
         this.pendingImportData = null;
+        this.pendingImportMode = null;
         
         // Swipe gesture properties
         this.touchStartX = 0;
@@ -364,7 +365,7 @@ class VaultMail {
         });
         document.getElementById('sidebarImportBtn').addEventListener('click', () => {
             this.hideAllTooltips();
-            document.getElementById('importFileInput').click();
+            this.showImportModeModal();
             this.closeSidebar();
         });
         document.getElementById('sidebarHelpBtn').addEventListener('click', () => {
@@ -441,7 +442,7 @@ class VaultMail {
 
         // Export/Import buttons
         document.getElementById('exportBtn').addEventListener('click', () => this.exportAccounts());
-        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+        document.getElementById('importBtn').addEventListener('click', () => this.showImportModeModal());
         document.getElementById('importFileInput').addEventListener('change', (e) => this.importAccounts(e));
 
         // Favorites button
@@ -2250,8 +2251,14 @@ class VaultMail {
                 fileType: fileType
             };
 
-            // Mostrar modal
-            this.showImportModal(importedAccounts.length);
+            // Si ya hay un modo seleccionado, ejecutar la importación directamente
+            if (this.pendingImportMode) {
+                this.executeImport(this.pendingImportMode);
+                this.pendingImportMode = null;
+            } else {
+                // Si no, mostrar modal para confirmar
+                this.showImportConfirmModal(importedAccounts.length);
+            }
         } catch (error) {
             throw error;
         }
@@ -2275,7 +2282,57 @@ class VaultMail {
         return this.parseAccountsFromPDF(extractedText);
     }
 
-    showImportModal(accountCount) {
+    showImportModeModal() {
+        const modal = document.getElementById('importModal');
+        const message = modal.querySelector('.modal-logout-message');
+        
+        // Cambiar mensaje para seleccionar modo
+        message.innerHTML = '¿Cómo deseas importar las cuentas?';
+        
+        // Mostrar modal
+        modal.classList.remove('d-none');
+
+        // Limpiar listeners anteriores
+        const cancelBtn = document.getElementById('importCancelBtn');
+        const addBtn = document.getElementById('importAddBtn');
+        const overwriteBtn = document.getElementById('importOverwriteBtn');
+
+        // Remover listeners anteriores
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newAddBtn = addBtn.cloneNode(true);
+        const newOverwriteBtn = overwriteBtn.cloneNode(true);
+
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        overwriteBtn.parentNode.replaceChild(newOverwriteBtn, overwriteBtn);
+
+        // Agregar nuevos listeners
+        document.getElementById('importCancelBtn').addEventListener('click', () => {
+            modal.classList.add('d-none');
+        });
+
+        document.getElementById('importAddBtn').addEventListener('click', () => {
+            modal.classList.add('d-none');
+            this.pendingImportMode = 'add';
+            document.getElementById('importFileInput').click();
+        });
+
+        document.getElementById('importOverwriteBtn').addEventListener('click', () => {
+            modal.classList.add('d-none');
+            this.pendingImportMode = 'overwrite';
+            document.getElementById('importFileInput').click();
+        });
+
+        // Permitir cerrar con click en overlay
+        const overlay = modal.querySelector('.modal-logout-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                modal.classList.add('d-none');
+            });
+        }
+    }
+
+    showImportConfirmModal(accountCount) {
         const modal = document.getElementById('importModal');
         document.getElementById('importAccountCount').textContent = accountCount;
         modal.classList.remove('d-none');
