@@ -346,6 +346,23 @@ class VaultMail {
     }
 
     setupEventListeners() {
+        // Clone elements to remove existing event listeners before adding new ones
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const newSidebarToggle = sidebarToggle.cloneNode(true);
+        sidebarToggle.parentNode.replaceChild(newSidebarToggle, sidebarToggle);
+
+        const sidebarClose = document.getElementById('sidebarClose');
+        const newSidebarClose = sidebarClose.cloneNode(true);
+        sidebarClose.parentNode.replaceChild(newSidebarClose, sidebarClose);
+
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const newSidebarOverlay = sidebarOverlay.cloneNode(true);
+        sidebarOverlay.parentNode.replaceChild(newSidebarOverlay, sidebarOverlay);
+
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+        const newSidebarCollapseBtn = sidebarCollapseBtn.cloneNode(true);
+        sidebarCollapseBtn.parentNode.replaceChild(newSidebarCollapseBtn, sidebarCollapseBtn);
+
         // Sidebar controls
         document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
         document.getElementById('sidebarClose').addEventListener('click', () => this.closeSidebar());
@@ -489,8 +506,10 @@ class VaultMail {
         // Check for accounts that should be reactivated
         setInterval(() => this.checkAndUpdateInactiveAccounts(), 60000); // Check every minute
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+        // Keyboard shortcuts - remove old listener before adding new one
+        document.removeEventListener('keydown', this._keyboardHandler);
+        this._keyboardHandler = (e) => this.handleKeyboardShortcuts(e);
+        document.addEventListener('keydown', this._keyboardHandler);
     }
 
     setupKeyboardShortcuts() {
