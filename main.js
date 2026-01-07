@@ -148,7 +148,14 @@ class VaultMail {
     }
 
     accessDashboard() {
-        document.getElementById('loginScreen').classList.add('d-none');
+        const loginScreen = document.getElementById('loginScreen');
+        loginScreen.classList.add('slide-out-left');
+        
+        // Esperar a que la animación termine antes de ocultar
+        setTimeout(() => {
+            loginScreen.classList.add('d-none');
+        }, 700);
+        
         document.body.style.overflow = 'auto';
         // Restaurar tema guardado al entrar al dashboard
         const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -301,12 +308,21 @@ class VaultMail {
             this.sessionNotificationCheckInterval = null;
         }
         document.getElementById('logoutConfirmModal').classList.add('d-none');
-        document.getElementById('loginScreen').classList.remove('d-none');
+        const loginScreen = document.getElementById('loginScreen');
+        loginScreen.classList.remove('d-none');
+        loginScreen.classList.remove('slide-out-left');
+        loginScreen.classList.add('slide-in-right');
         document.body.style.overflow = 'hidden';
         this.accounts = [];
         this.filteredAccounts = [];
         document.getElementById('accountsContainer').innerHTML = '';
         document.getElementById('loginPassword').value = '';
+        
+        // Quitar la clase de animación después de terminar
+        setTimeout(() => {
+            loginScreen.classList.remove('slide-in-right');
+        }, 700);
+        
         this.showLoginModal();
     }
 
@@ -327,7 +343,6 @@ class VaultMail {
         this.setupPasswordGeneratorModal();
         this.setupTags();
         this.setupPasswordStrengthIndicator();
-        this.setupSecurityAuditButton();
     }
 
     setupEventListeners() {
@@ -373,16 +388,6 @@ class VaultMail {
             this.openHelpModal();
             this.closeSidebar();
         });
-        
-        // Security audit button
-        const securityBtn = document.getElementById('sidebarSecurityBtn');
-        if (securityBtn) {
-            securityBtn.addEventListener('click', () => {
-                this.hideAllTooltips();
-                this.openSecurityAudit();
-                this.closeSidebar();
-            });
-        }
 
         // Modal controls
         document.getElementById('newAccountBtn').addEventListener('click', () => this.openNewAccountModal());
@@ -1016,7 +1021,7 @@ class VaultMail {
         container.querySelectorAll('.btn-favorite').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const accountId = btn.dataset.id;
+                const accountId = parseFloat(btn.dataset.id);
                 this.toggleFavorite(accountId, btn);
             });
         });
@@ -1264,7 +1269,7 @@ class VaultMail {
         container.querySelectorAll('.btn-table-favorite').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const accountId = btn.dataset.id;
+                const accountId = parseFloat(btn.dataset.id);
                 this.toggleFavorite(accountId, btn);
             });
         });
@@ -1881,7 +1886,7 @@ class VaultMail {
     }
 
     toggleFavorite(accountId, btn) {
-        const account = this.accounts.find(a => a.id == accountId);
+        const account = this.accounts.find(a => a.id === accountId);
         if (!account) return;
 
         account.isFavorite = !account.isFavorite;
@@ -3218,165 +3223,6 @@ class VaultMail {
         return Array.from(container.querySelectorAll('.tag-badge span')).map(span => span.textContent);
     }
 
-    // Auditoría de Seguridad
-    openSecurityAudit() {
-        const modal = document.getElementById('securityAuditModal');
-        if (!modal) return;
-
-        this.updateSecurityAudit();
-        modal.classList.add('active');
-
-        const closeBtn = document.getElementById('closeSecurityModal');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                modal.classList.remove('active');
-            }, { once: true });
-        }
-
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
-        }, { once: true });
-    }
-
-    updateSecurityAudit() {
-        const accounts = this.accounts;
-        const passwords = accounts.map(a => a.password);
-        const weakPasswords = accounts.filter(a => this.calculatePasswordStrength(a.password).level === 'weak');
-        const strongPasswords = accounts.filter(a => this.calculatePasswordStrength(a.password).level === 'good');
-        const duplicates = this.findDuplicatePasswords(passwords);
-
-        // Update stats
-        document.getElementById('securityTotalAccounts').textContent = accounts.length;
-        document.getElementById('securityStrongPasswords').textContent = strongPasswords.length;
-        document.getElementById('securityWeakPasswords').textContent = weakPasswords.length;
-        document.getElementById('securityDuplicates').textContent = Object.keys(duplicates).filter(key => duplicates[key].count > 1).length;
-
-        // Update recommendations
-        const recommendations = this.generateSecurityRecommendations(accounts, weakPasswords, duplicates);
-        const recList = document.getElementById('securityRecommendations');
-        if (recList) {
-            recList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
-        }
-
-        // Update weak passwords list
-        const weakList = document.getElementById('weakPasswordsList');
-        if (weakList) {
-            if (weakPasswords.length === 0) {
-                weakList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">¡Todas tus contraseñas son fuertes!</p>';
-            } else {
-                weakList.innerHTML = weakPasswords.map(acc => `
-                    <div class="weak-password-item">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <div class="weak-password-info">
-                            <div class="weak-password-email">${acc.email || acc.username || 'Sin nombre'}</div>
-                            <div class="weak-password-reason">${acc.category} - Menos de 12 caracteres o sin variedad</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // Update duplicates list
-        const dupList = document.getElementById('duplicatePasswordsList');
-        if (dupList) {
-            const dupAccounts = [];
-            for (let password in duplicates) {
-                if (duplicates[password].count > 1) {
-                    dupAccounts.push(...duplicates[password].accounts);
-                }
-            }
-
-            if (dupAccounts.length === 0) {
-                dupList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No hay contraseñas duplicadas</p>';
-            } else {
-                dupList.innerHTML = dupAccounts.map(acc => `
-                    <div class="duplicate-password-item">
-                        <i class="bi bi-exclamation-circle"></i>
-                        <div class="duplicate-password-info">
-                            <div class="duplicate-password-email">${acc.email || acc.username || 'Sin nombre'}</div>
-                            <div class="duplicate-password-reason">${acc.category} - Contraseña usada en múltiples cuentas</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-    }
-
-    findDuplicatePasswords(passwords) {
-        const duplicates = {};
-        const passwordMap = {};
-
-        this.accounts.forEach(account => {
-            const pwd = account.password;
-            if (!passwordMap[pwd]) {
-                passwordMap[pwd] = [];
-            }
-            passwordMap[pwd].push(account);
-        });
-
-        for (let pwd in passwordMap) {
-            if (passwordMap[pwd].length > 1) {
-                duplicates[pwd] = {
-                    count: passwordMap[pwd].length,
-                    accounts: passwordMap[pwd]
-                };
-            }
-        }
-
-        return duplicates;
-    }
-
-    generateSecurityRecommendations(accounts, weakPasswords, duplicates) {
-        const recommendations = [];
-
-        if (accounts.length === 0) {
-            recommendations.push('Comienza a agregar cuentas para proteger tus contraseñas');
-        } else {
-            recommendations.push(`${accounts.length} cuenta${accounts.length > 1 ? 's' : ''} protegida${accounts.length > 1 ? 's' : ''}`);
-        }
-
-        if (weakPasswords.length > 0) {
-            recommendations.push(`⚠️ ${weakPasswords.length} contraseña${weakPasswords.length > 1 ? 's' : ''} débil${weakPasswords.length > 1 ? 's' : ''} - considera actualizarla${weakPasswords.length > 1 ? 's' : ''}`);
-        } else {
-            recommendations.push('✓ Todas tus contraseñas tienen buena fortaleza');
-        }
-
-        const dupCount = Object.keys(duplicates).filter(key => duplicates[key].count > 1).length;
-        if (dupCount > 0) {
-            recommendations.push(`⚠️ ${dupCount} contraseña${dupCount > 1 ? 's' : ''} se usa${dupCount > 1 ? 'n' : ''} en múltiples cuentas - usa contraseñas únicas`);
-        } else {
-            recommendations.push('✓ Todas tus contraseñas son únicas');
-        }
-
-        if (accounts.filter(a => a.status === 'activa').length > 0) {
-            recommendations.push('✓ Cuentas activas: todas en uso');
-        }
-
-        return recommendations;
-    }
-
-    // Mejorar actualización de contraseña en formulario
-    updatePasswordStrengthUI(password) {
-        const group = document.getElementById('passwordStrengthGroup');
-        if (!group) return;
-
-        if (!password) {
-            group.style.display = 'none';
-            return;
-        }
-
-        group.style.display = 'block';
-        const strength = this.calculatePasswordStrength(password);
-        const bar = document.getElementById('strengthBar');
-        const label = document.getElementById('strengthLabel');
-
-        if (bar && label) {
-            bar.style.background = strength.color;
-            bar.style.width = strength.percent + '%';
-            label.textContent = `Seguridad: ${strength.label}`;
-        }
-    }
-
     setupPasswordStrengthIndicator() {
         const passwordInput = document.getElementById('password');
         if (!passwordInput) return;
@@ -3384,11 +3230,6 @@ class VaultMail {
         passwordInput.addEventListener('input', (e) => {
             this.updatePasswordStrengthUI(e.target.value);
         });
-    }
-
-    setupSecurityAuditButton() {
-        // Este método se llamará desde setupEventListeners
-        // La funcionalidad real está en openSecurityAudit()
     }
 }
 

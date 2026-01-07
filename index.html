@@ -501,16 +501,6 @@
               <i class="bi bi-question-circle"></i>
               <span class="sidebar-label">Centro de Ayuda</span>
             </button>
-            <button
-              class="sidebar-nav-item"
-              id="sidebarSecurityBtn"
-              data-bs-toggle="tooltip"
-              data-bs-placement="right"
-              data-bs-title="Auditoría de seguridad"
-            >
-              <i class="bi bi-shield-check"></i>
-              <span class="sidebar-label">Seguridad</span>
-            </button>
           </nav>
           <div class="sidebar-actions-divider"></div>
           <button
@@ -1340,74 +1330,6 @@
             >
               <i class="bi bi-check"></i> Guardar de Todas Formas
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal para auditoría de seguridad -->
-    <div class="modal" id="securityAuditModal">
-      <div class="modal-content security-audit-modal-content">
-        <div class="modal-header">
-          <h2>Auditoría de Seguridad</h2>
-          <button class="modal-close" id="closeSecurityModal">&times;</button>
-        </div>
-        <div class="security-audit-content">
-          <!-- Estadísticas Rápidas -->
-          <div class="security-stats-grid">
-            <div class="security-stat-card">
-              <div class="security-stat-value" id="securityTotalAccounts">
-                0
-              </div>
-              <div class="security-stat-label">Total de Cuentas</div>
-            </div>
-            <div class="security-stat-card">
-              <div
-                class="security-stat-value strong"
-                id="securityStrongPasswords"
-              >
-                0
-              </div>
-              <div class="security-stat-label">Contraseñas Fuertes</div>
-            </div>
-            <div class="security-stat-card">
-              <div class="security-stat-value weak" id="securityWeakPasswords">
-                0
-              </div>
-              <div class="security-stat-label">Contraseñas Débiles</div>
-            </div>
-            <div class="security-stat-card">
-              <div class="security-stat-value error" id="securityDuplicates">
-                0
-              </div>
-              <div class="security-stat-label">Duplicadas</div>
-            </div>
-          </div>
-
-          <div class="security-audit-main">
-            <!-- Panel Izquierdo -->
-            <div class="security-audit-panel">
-              <h3>⚠️ Recomendaciones</h3>
-              <ul id="securityRecommendations">
-                <li>Cargando recomendaciones...</li>
-              </ul>
-            </div>
-
-            <!-- Panel Derecho -->
-            <div class="security-audit-panel">
-              <h3>Contraseñas Débiles</h3>
-              <div id="weakPasswordsList">
-                <p class="empty-state">No hay contraseñas débiles</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Panel de Duplicados (debajo en móvil, a la derecha en PC) -->
-          <div class="security-audit-panel full-width-mobile">
-            <h3>Contraseñas Duplicadas</h3>
-            <div id="duplicatePasswordsList">
-              <p class="empty-state">No hay contraseñas duplicadas</p>
-            </div>
           </div>
         </div>
       </div>

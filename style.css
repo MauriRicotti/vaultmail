@@ -1374,6 +1374,20 @@ body.light-mode .theme-toggle-sidebar:hover {
 
 .btn-action.btn-favorite:hover {
   color: #fbbf24;
+  transform: scale(1.15);
+}
+
+.btn-action.btn-favorite i.bi-star-fill {
+  color: #fbbf24;
+}
+
+.btn-action.btn-table-favorite:hover {
+  color: #fbbf24;
+  transform: scale(1.15);
+}
+
+.btn-action.btn-table-favorite i.bi-star-fill {
+  color: #fbbf24;
 }
 
 .btn-action.btn-gmail:hover {
@@ -5189,214 +5203,6 @@ body.light-mode .modal-logout-overlay {
   background: var(--success-color);
 }
 
-/* Estilos para el modal de seguridad */
-.security-audit-modal-content {
-  max-width: 1200px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.security-audit-content {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.security-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.security-stat-card {
-  background: var(--card-bg);
-  padding: 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  text-align: center;
-}
-
-.security-stat-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.security-stat-value.strong {
-  color: var(--success-color);
-}
-
-.security-stat-value.weak {
-  color: var(--warning-color);
-}
-
-.security-stat-value.error {
-  color: var(--error-color);
-}
-
-.security-stat-label {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-top: 0.5rem;
-}
-
-/* Layout horizontal en PC, vertical en móvil */
-.security-audit-main {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.security-audit-panel {
-  background: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.security-audit-panel h3 {
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-  margin-top: 0;
-}
-
-.security-audit-panel ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.security-audit-panel ul li {
-  padding: 0.5rem 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.security-audit-panel ul li:before {
-  content: "✓";
-  color: var(--success-color);
-  font-weight: bold;
-  min-width: 20px;
-  flex-shrink: 0;
-}
-
-.weak-password-item,
-.duplicate-password-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  border-left: 3px solid var(--error-color);
-  margin-bottom: 0.5rem;
-}
-
-.weak-password-item i,
-.duplicate-password-item i {
-  color: var(--error-color);
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.weak-password-info,
-.duplicate-password-info {
-  flex: 1;
-}
-
-.weak-password-email,
-.duplicate-password-email {
-  color: var(--text-primary);
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.weak-password-reason,
-.duplicate-password-reason {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-}
-
-.empty-state {
-  color: var(--text-secondary);
-  text-align: center;
-  padding: 1rem;
-  margin: 0;
-}
-
-/* Responsive: Vertical en móvil */
-@media (max-width: 1024px) {
-  .security-audit-main {
-    grid-template-columns: 1fr;
-  }
-
-  .full-width-mobile {
-    width: 100%;
-  }
-
-  .security-audit-content {
-    padding: 1rem;
-  }
-
-  .security-audit-panel {
-    padding: 1rem;
-  }
-
-  .security-stat-value {
-    font-size: 1.5rem;
-  }
-
-  .security-stats-grid {
-    margin-bottom: 1.5rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .security-audit-modal-content {
-    max-height: 80vh;
-  }
-
-  .security-audit-content {
-    padding: 0.75rem;
-  }
-
-  .security-stats-grid {
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .security-stat-card {
-    padding: 0.75rem;
-  }
-
-  .security-stat-value {
-    font-size: 1.25rem;
-  }
-
-  .security-stat-label {
-    font-size: 0.75rem;
-  }
-
-  .security-audit-panel {
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  .security-audit-main {
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-}
-
 /* Responsive - Tag Input in Mobile */
 @media (max-width: 768px) {
   #tagInputContainer {
@@ -5495,4 +5301,41 @@ body.light-mode .modal-logout-overlay {
     padding: 10px 12px;
     font-size: 16px;
   }
+}
+
+/* Login Screen Slide Out Animation */
+@keyframes slideOutLeft {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-120%) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    transform: translateX(-120%) scale(0.95);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.login-screen.slide-out-left {
+  animation: slideOutLeft 0.7s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+}
+
+.login-screen.slide-in-right {
+  animation: slideInRight 0.7s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
 }
