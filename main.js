@@ -9,6 +9,7 @@ class VaultMail {
         this.viewMode = 'cards'; // 'cards' or 'table'
         this.currentPage = 1;
         this.itemsPerPage = 6;
+        this.pendingImportData = null;
         
         // Swipe gesture properties
         this.touchStartX = 0;
@@ -2193,11 +2194,11 @@ class VaultMail {
                 const fileType = file.type;
                 
                 if (fileType === 'application/pdf' || file.name.endsWith('.pdf')) {
-                    // Importar desde PDF
-                    await this.importFromPDF(e.target.result);
+                    // Importar desde PDF - validar primero
+                    await this.validateAndShowImportModal(e.target.result, 'pdf');
                 } else if (fileType === 'application/json' || file.name.endsWith('.json')) {
-                    // Importar desde JSON (para compatibilidad hacia atrás)
-                    this.importFromJSON(e.target.result);
+                    // Importar desde JSON - validar primero
+                    await this.validateAndShowImportModal(e.target.result, 'json');
                 } else {
                     throw new Error('Formato de archivo no válido. Use PDF o JSON.');
                 }
@@ -2216,7 +2217,47 @@ class VaultMail {
         event.target.value = '';
     }
 
-    async importFromPDF(arrayBuffer) {
+    async validateAndShowImportModal(fileContent, fileType) {
+        let importedAccounts = [];
+        
+        try {
+            if (fileType === 'pdf') {
+                importedAccounts = await this.parseAccountsFromPDFContent(fileContent);
+            } else {
+                importedAccounts = JSON.parse(fileContent);
+                
+                if (!Array.isArray(importedAccounts)) {
+                    throw new Error('El archivo no contiene un array válido');
+                }
+
+                // Validate accounts structure
+                const isValid = importedAccounts.every(acc => 
+                    (acc.email || acc.username) && acc.password && acc.category && typeof acc.id === 'number'
+                );
+
+                if (!isValid) {
+                    throw new Error('El archivo contiene un formato inválido');
+                }
+            }
+            
+            if (importedAccounts.length === 0) {
+                throw new Error('No se encontraron cuentas válidas en el archivo');
+            }
+
+            // Guardar los datos para usar después
+            this.pendingImportData = {
+                accounts: importedAccounts,
+                fileType: fileType
+            };
+
+            // Mostrar modal
+            this.showImportModal(importedAccounts.length);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async parseAccountsFromPDFContent(arrayBuffer) {
         const pdfjsLib = window.pdfjsLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -2231,7 +2272,104 @@ class VaultMail {
         }
 
         // Parsear el texto extraído
-        const importedAccounts = this.parseAccountsFromPDF(extractedText);
+        return this.parseAccountsFromPDF(extractedText);
+    }
+
+    showImportModal(accountCount) {
+        const modal = document.getElementById('importModal');
+        document.getElementById('importAccountCount').textContent = accountCount;
+        modal.classList.remove('d-none');
+
+        // Limpiar listeners anteriores
+        const cancelBtn = document.getElementById('importCancelBtn');
+        const addBtn = document.getElementById('importAddBtn');
+        const overwriteBtn = document.getElementById('importOverwriteBtn');
+
+        // Remover listeners anteriores
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newAddBtn = addBtn.cloneNode(true);
+        const newOverwriteBtn = overwriteBtn.cloneNode(true);
+
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        overwriteBtn.parentNode.replaceChild(newOverwriteBtn, overwriteBtn);
+
+        // Agregar nuevos listeners
+        document.getElementById('importCancelBtn').addEventListener('click', () => {
+            modal.classList.add('d-none');
+            this.pendingImportData = null;
+        });
+
+        document.getElementById('importAddBtn').addEventListener('click', () => {
+            this.executeImport('add');
+            modal.classList.add('d-none');
+        });
+
+        document.getElementById('importOverwriteBtn').addEventListener('click', () => {
+            this.executeImport('overwrite');
+            modal.classList.add('d-none');
+        });
+
+        // Permitir cerrar con click en overlay
+        const overlay = modal.querySelector('.modal-logout-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                modal.classList.add('d-none');
+                this.pendingImportData = null;
+            });
+        }
+    }
+
+    executeImport(mode) {
+        if (!this.pendingImportData) return;
+
+        const importedAccounts = this.pendingImportData.accounts;
+        const fileType = this.pendingImportData.fileType;
+        let importedCount = 0;
+        const sourceLabel = fileType === 'pdf' ? 'PDF' : 'JSON';
+
+        if (mode === 'overwrite') {
+            // Sobreescribir: eliminar todas las cuentas actuales
+            this.accounts = importedAccounts.map(acc => ({
+                ...acc,
+                inactiveUntil: acc.inactiveUntil || null,
+                isFavorite: acc.isFavorite || false,
+                isArchived: acc.isArchived || false,
+                tags: acc.tags || []
+            }));
+            importedCount = importedAccounts.length;
+        } else {
+            // Agregar: merge con cuentas existentes
+            const existingIds = new Set(this.accounts.map(a => a.id));
+            
+            importedAccounts.forEach(importedAccount => {
+                if (!existingIds.has(importedAccount.id)) {
+                    this.accounts.push({
+                        ...importedAccount,
+                        inactiveUntil: importedAccount.inactiveUntil || null,
+                        isFavorite: importedAccount.isFavorite || false,
+                        isArchived: importedAccount.isArchived || false,
+                        tags: importedAccount.tags || []
+                    });
+                    importedCount++;
+                }
+            });
+        }
+
+        this.saveAccounts();
+        this.renderAccounts();
+        this.updateStats();
+        
+        const modeLabel = mode === 'overwrite' ? 'reemplazadas' : 'agregadas';
+        this.showNotification(`${importedCount} cuenta(s) ${modeLabel} exitosamente desde ${sourceLabel}`);
+        
+        this.pendingImportData = null;
+    }
+
+    async importFromPDF(arrayBuffer) {
+        // Este método se mantiene por compatibilidad hacia atrás
+        // La importación ahora se maneja a través de validateAndShowImportModal
+        const importedAccounts = await this.parseAccountsFromPDFContent(arrayBuffer);
         
         if (importedAccounts.length === 0) {
             throw new Error('No se encontraron cuentas válidas en el PDF');
@@ -2255,6 +2393,8 @@ class VaultMail {
     }
 
     importFromJSON(jsonString) {
+        // Este método se mantiene por compatibilidad hacia atrás
+        // La importación ahora se maneja a través de validateAndShowImportModal
         const importedAccounts = JSON.parse(jsonString);
         
         if (!Array.isArray(importedAccounts)) {

@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1704556800000,
+    "username": "testuser1",
+    "email": "test1@example.com",
+    "password": "TestPassword123!",
+    "notes": "Test account 1",
+    "category": "personal",
+    "status": "activa",
+    "inactiveUntil": null,
+    "createdAt": "2026-01-06T10:00:00.000Z",
+    "isFavorite": false,
+    "isArchived": false,
+    "tags": ["test", "importacion"]
+  },
+  {
+    "id": 1704556800001,
+    "username": "testuser2",
+    "email": "test2@example.com",
+    "password": "AnotherPassword456!",
+    "notes": "Test account 2",
+    "category": "trabajo",
+    "status": "activa",
+    "inactiveUntil": null,
+    "createdAt": "2026-01-06T10:00:00.000Z",
+    "isFavorite": true,
+    "isArchived": false,
+    "tags": ["test"]
+  }
+]

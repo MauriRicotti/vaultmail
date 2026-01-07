@@ -3344,8 +3344,7 @@ body.light-mode .account-notes-preview {
 
 .login-input-group:focus-within {
   border-color: #7c3aed;
-  box-shadow: 0 0 0 4px rgba(15, 93, 154, 0.1),
-    0 0 20px rgba(15, 93, 154, 0.15);
+  box-shadow: 0 0 0 4px rgba(15, 93, 154, 0.1), 0 0 20px rgba(15, 93, 154, 0.15);
   background: rgba(30, 41, 59, 0.8);
 }
 
@@ -5008,6 +5007,18 @@ body.light-mode .login-screen-title {
 body.light-mode .modal-logout-overlay {
   background: rgba(0, 0, 0, 0.4);
 }
+
+/* Responsive modal actions for multiple buttons */
+@media (max-width: 600px) {
+  .modal-logout-actions {
+    flex-direction: column;
+  }
+
+  .modal-logout-btn {
+    min-width: 100%;
+  }
+}
+
 /* Session Notification Styles */
 .session-notification {
   position: fixed;
@@ -5485,5 +5496,3 @@ body.light-mode .modal-logout-overlay {
     font-size: 16px;
   }
 }
-
-

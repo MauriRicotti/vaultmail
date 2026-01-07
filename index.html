@@ -193,6 +193,44 @@
       </div>
     </div>
 
+    <!-- Modal de Importación de Cuentas -->
+    <div id="importModal" class="modal-logout d-none">
+      <div class="modal-logout-overlay"></div>
+      <div class="modal-logout-content">
+        <div class="modal-logout-icon">
+          <i class="bi bi-file-arrow-down"></i>
+        </div>
+        <h2 class="modal-logout-title">Importar Cuentas</h2>
+        <p class="modal-logout-message">
+          Se han encontrado <span id="importAccountCount">0</span> cuenta(s).
+          ¿Cómo deseas importarlas?
+        </p>
+        <div class="modal-logout-actions">
+          <button
+            class="modal-logout-btn modal-logout-cancel"
+            id="importCancelBtn"
+          >
+            Cancelar
+          </button>
+          <button
+            class="modal-logout-btn modal-logout-confirm"
+            id="importAddBtn"
+            style="background-color: #0f5d9a; color: white"
+          >
+            <i class="bi bi-plus-circle" style="margin-right: 5px"></i>Agregar
+          </button>
+          <button
+            class="modal-logout-btn modal-logout-confirm"
+            id="importOverwriteBtn"
+            style="background-color: #dc3545; color: white"
+          >
+            <i class="bi bi-arrow-repeat" style="margin-right: 5px"></i
+            >Sobreescribir
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
       <div class="header-container">
