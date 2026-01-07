@@ -113,12 +113,14 @@ class VaultMail {
             // First login - set master password
             localStorage.setItem('vaultmail_master_password', this.hashPassword(password));
             localStorage.setItem('vaultmail_authenticated', 'true');
+            localStorage.setItem('vaultmail_login_time', Date.now().toString());
             document.getElementById('loginForm').reset();
             this.accessDashboard();
         } else {
             // Verify password
             if (this.verifyPassword(password, storedPassword)) {
                 localStorage.setItem('vaultmail_authenticated', 'true');
+                localStorage.setItem('vaultmail_login_time', Date.now().toString());
                 document.getElementById('loginForm').reset();
                 document.getElementById('loginError').classList.add('d-none');
                 
@@ -287,9 +289,14 @@ class VaultMail {
 
     performLogout() {
         localStorage.removeItem('vaultmail_authenticated');
-        sessionStorage.removeItem('vaultmail_session_start_time');
+        localStorage.removeItem('vaultmail_login_time');
         if (this.sessionTimeInterval) {
             clearInterval(this.sessionTimeInterval);
+            this.sessionTimeInterval = null;
+        }
+        if (this.sessionNotificationCheckInterval) {
+            clearInterval(this.sessionNotificationCheckInterval);
+            this.sessionNotificationCheckInterval = null;
         }
         document.getElementById('logoutConfirmModal').classList.add('d-none');
         document.getElementById('loginScreen').classList.remove('d-none');
@@ -313,6 +320,12 @@ class VaultMail {
         this.updateStats();
         this.initializeTooltips(); // Initialize tooltips only if sidebar is collapsed
         this.initSessionNotification(); // Initialize session notification
+        
+        // Nueva configuración de funcionalidades
+        this.setupPasswordGeneratorModal();
+        this.setupTags();
+        this.setupPasswordStrengthIndicator();
+        this.setupSecurityAuditButton();
     }
 
     setupEventListeners() {
@@ -358,6 +371,16 @@ class VaultMail {
             this.openHelpModal();
             this.closeSidebar();
         });
+        
+        // Security audit button
+        const securityBtn = document.getElementById('sidebarSecurityBtn');
+        if (securityBtn) {
+            securityBtn.addEventListener('click', () => {
+                this.hideAllTooltips();
+                this.openSecurityAudit();
+                this.closeSidebar();
+            });
+        }
 
         // Modal controls
         document.getElementById('newAccountBtn').addEventListener('click', () => this.openNewAccountModal());
@@ -559,11 +582,23 @@ class VaultMail {
         this.currentEditingId = null;
         document.getElementById('accountForm').reset();
         
+        // Resetear etiquetas
+        const tagsContainer = document.getElementById('tagsContainer');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+        }
+        
         // Resetear el estado del grupo de fecha inactiva
         const inactiveUntilGroup = document.getElementById('inactiveUntilGroup');
         const statusCheckbox = document.getElementById('status');
         inactiveUntilGroup.style.display = 'none';
         document.getElementById('inactiveUntil').value = '';
+        
+        // Resetear indicador de fortaleza de contraseña
+        const passwordStrengthGroup = document.getElementById('passwordStrengthGroup');
+        if (passwordStrengthGroup) {
+            passwordStrengthGroup.style.display = 'none';
+        }
         
         document.querySelector('.modal-header h2').textContent = 'Agregar Nueva Cuenta';
         document.querySelector('.modal-description').textContent = 'Completa los datos de tu cuenta';
@@ -589,10 +624,18 @@ class VaultMail {
 
         const username = document.getElementById('username').value.trim();
         let email = document.getElementById('email').value.trim();
+        const notes = document.getElementById('notes').value.trim();
         
         // Validar que al menos uno de los dos esté completado
         if (!username && !email) {
             this.showNotification('Debes completar al menos el nombre de usuario o el correo electrónico');
+            return;
+        }
+
+        // Validar que las notas no estén vacías
+        if (!notes) {
+            this.showNotification('Las notas son obligatorias. Agrega una descripción de la cuenta.');
+            document.getElementById('notes').focus();
             return;
         }
         
@@ -697,8 +740,10 @@ class VaultMail {
             status: statusCheckbox ? 'activa' : 'inactiva',
             inactiveUntil: !statusCheckbox && inactiveUntilValue ? inactiveUntilValue : null,
             createdAt: this.currentEditingId ? this.accounts.find(a => a.id === this.currentEditingId).createdAt : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             isFavorite: this.currentEditingId ? this.accounts.find(a => a.id === this.currentEditingId).isFavorite : false,
-            isArchived: this.currentEditingId ? this.accounts.find(a => a.id === this.currentEditingId).isArchived : false
+            isArchived: this.currentEditingId ? this.accounts.find(a => a.id === this.currentEditingId).isArchived : false,
+            tags: this.getTags()
         };
 
         if (this.currentEditingId) {
@@ -799,6 +844,18 @@ class VaultMail {
         document.getElementById('status').checked = account.status === 'activa';
         document.getElementById('inactiveUntil').value = account.inactiveUntil || '';
 
+        // Cargar etiquetas existentes
+        const tagsContainer = document.getElementById('tagsContainer');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+            if (account.tags && account.tags.length > 0) {
+                account.tags.forEach(tag => this.addTag(tag));
+            }
+        }
+
+        // Actualizar indicador de fortaleza de contraseña
+        this.updatePasswordStrengthUI(account.password);
+
         // Show/hide inactiveUntil field based on status
         const inactiveUntilGroup = document.getElementById('inactiveUntilGroup');
         if (account.status === 'inactiva') {
@@ -840,7 +897,8 @@ class VaultMail {
             const matchesSearch = !searchTerm || 
                                 (account.email && account.email.toLowerCase().includes(searchTerm)) ||
                                 (account.username && account.username.toLowerCase().includes(searchTerm)) ||
-                                (account.notes && account.notes.toLowerCase().includes(searchTerm));
+                                (account.notes && account.notes.toLowerCase().includes(searchTerm)) ||
+                                (account.tags && account.tags.some(tag => tag.toLowerCase().includes(searchTerm)));
             const matchesCategory = !categoryFilter || account.category === categoryFilter;
             const matchesStatus = !statusFilter || account.status === statusFilter;
             const matchesArchive = this.showOnlyArchived ? account.isArchived : !account.isArchived;
@@ -949,6 +1007,86 @@ class VaultMail {
                 e.stopPropagation();
                 this.currentEditingId = parseInt(btn.dataset.id, 10);
                 this.deleteAccount();
+            });
+        });
+
+        // Add favorite button listeners
+        container.querySelectorAll('.btn-favorite').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const accountId = btn.dataset.id;
+                this.toggleFavorite(accountId, btn);
+            });
+        });
+
+        // Add tag removal listeners
+        container.querySelectorAll('.btn-remove-tag').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const accountId = btn.dataset.accountId;
+                const tag = btn.dataset.tag;
+                this.removeTagFromAccount(accountId, tag);
+            });
+        });
+
+        // Close tag input when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.account-card')) {
+                container.querySelectorAll('.account-tag-input-section').forEach(section => {
+                    section.style.display = 'none';
+                    const input = section.querySelector('.account-tag-input');
+                    input.value = '';
+                });
+            }
+        });
+
+        // Add tag input toggle listeners
+        container.querySelectorAll('.btn-toggle-add-tag').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.account-card');
+                const inputSection = card.querySelector('.account-tag-input-section');
+                const input = card.querySelector('.account-tag-input');
+                if (inputSection.style.display === 'none') {
+                    inputSection.style.display = 'flex';
+                    input.focus();
+                } else {
+                    inputSection.style.display = 'none';
+                    input.value = '';
+                }
+            });
+        });
+
+        // Add tag input listeners
+        container.querySelectorAll('.account-tag-input').forEach(input => {
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    const addBtn = input.nextElementSibling;
+                    const accountId = addBtn.dataset.id;
+                    const tag = input.value.trim();
+                    if (tag) {
+                        this.addTagToAccount(accountId, tag);
+                        input.value = '';
+                    }
+                }
+            });
+        });
+
+        // Add tag button listeners
+        container.querySelectorAll('.btn-add-tag-card').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const input = btn.previousElementSibling;
+                const accountId = btn.dataset.id;
+                const tag = input.value.trim();
+                if (tag) {
+                    this.addTagToAccount(accountId, tag);
+                    input.value = '';
+                }
             });
         });
 
@@ -1232,6 +1370,17 @@ class VaultMail {
             inactiveUntilHtml = `<div class="account-inactive-until"><i class="bi bi-calendar"></i> En uso dentro de ${daysUntilActive} ${daysText}</div>`;
         }
 
+        // Renderizar etiquetas personalizadas
+        let tagsHtml = '';
+        if (account.tags && account.tags.length > 0) {
+            tagsHtml = `<div class="account-custom-tags" style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem;">
+                ${account.tags.map(tag => `<span class="tag-badge" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" data-account-id="${account.id}" data-tag="${this.escapeHtml(tag)}">
+                    <span>${this.escapeHtml(tag)}</span>
+                    <button type="button" class="btn-remove-tag" data-account-id="${account.id}" data-tag="${this.escapeHtml(tag)}"><i class="bi bi-x"></i></button>
+                </span>`).join('')}
+            </div>`;
+        }
+
         return `
             <div class="account-card" data-id="${account.id}">
                 <div class="account-header">
@@ -1240,21 +1389,21 @@ class VaultMail {
                         <div class="account-email">${this.escapeHtml(account.email || account.username || 'Sin datos')}</div>
                     </div>
                     <div class="account-actions">
+                        <div class="btn-action btn-status" title="${account.status === 'activa' ? 'En uso' : 'En desuso'}" style="${account.status === 'activa' ? 'background-color: rgba(34, 197, 94, 0.2);' : 'background-color: rgba(239, 68, 68, 0.2);'}">
+                            ${account.status === 'activa' ? '<i class="bi bi-check" style="color: var(--success-color);"></i>' : '<i class="bi bi-dash" style="color: var(--danger-color);"></i>'}
+                        </div>
                         <button type="button" class="btn-action btn-favorite" data-id="${account.id}" title="${account.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}">
                             <i class="bi bi-star${account.isFavorite ? '-fill' : ''}"></i>
                         </button>
                     </div>
                 </div>
                 <div class="account-tags">
-                    <span class="account-category">
-                        <i class="bi bi-tag"></i>
-                        ${this.getCategoryLabel(account.category)}
-                    </span>
-                    <span class="account-status ${account.status}">
-                        <i class="bi ${account.status === 'activa' ? 'bi-check-circle-fill' : 'bi-circle'}"></i>
-                        ${account.status === 'activa' ? 'En uso' : 'En desuso'}
-                    </span>
                     ${account.isArchived ? '<span class="account-archived"><i class="bi bi-archive-fill"></i> Archivada</span>' : ''}
+                </div>
+                ${tagsHtml}
+                <div class="account-tag-input-section" style="display: none; margin-top: 0.5rem; gap: 0.5rem;">
+                    <input type="text" class="account-tag-input" placeholder="Nueva etiqueta..." maxlength="30" style="flex: 1; padding: 0.5rem 0.8rem; border: 2px solid var(--primary-color); border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                    <button type="button" class="btn-add-tag-card" data-id="${account.id}" style="padding: 0.5rem 0.8rem; font-size: 1.1rem; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 40px; transition: all 0.3s ease;"><i class="bi bi-plus-lg"></i></button>
                 </div>
                 ${inactiveUntilHtml}
                 ${account.notes ? `
@@ -1291,11 +1440,18 @@ class VaultMail {
                     </div>
                 </div>
                 <div class="account-actions-footer">
+                    <span class="account-category" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                        <i class="bi ${this.getCategoryIcon(account.category)}"></i>
+                        ${this.getCategoryLabel(account.category)}
+                    </span>
                     ${account.email ? `
                     <button type="button" class="btn-action btn-gmail" data-email="${this.escapeHtml(account.email)}" title="Abrir en Gmail">
                         <i class="bi bi-box-arrow-up-right"></i>
                     </button>
                     ` : ''}
+                    <button type="button" class="btn-action btn-toggle-add-tag" data-id="${account.id}" title="Agregar etiqueta" style="font-size: 1.3rem;">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
                     <button type="button" class="btn-action btn-archive" data-id="${account.id}" title="${account.isArchived ? 'Desarchivar' : 'Archivar'}">
                         <i class="bi bi-archive${account.isArchived ? '-fill' : ''}"></i>
                     </button>
@@ -1384,9 +1540,22 @@ class VaultMail {
             ${account.notes ? `
             <div class="account-detail-item">
                 <div class="account-detail-label">Notas</div>
-                <div class="account-detail-value">${this.escapeHtml(account.notes)}</div>
+                <textarea 
+                    id="editNotes"
+                    class="account-detail-input"
+                    style="resize: vertical; min-height: 100px;"
+                >${this.escapeHtml(account.notes)}</textarea>
             </div>
-            ` : ''}
+            ` : `
+            <div class="account-detail-item">
+                <div class="account-detail-label">Notas</div>
+                <textarea 
+                    id="editNotes"
+                    class="account-detail-input"
+                    placeholder="Agrega notas sobre esta cuenta..."
+                    style="resize: vertical; min-height: 100px;"></textarea>
+            </div>
+            `}
             <div class="account-detail-item">
                 <div class="account-detail-label">Fecha de creación</div>
                 <div class="account-detail-value">${formattedDate}</div>
@@ -1440,6 +1609,7 @@ class VaultMail {
         const newStatus = statusCheckbox.checked ? 'activa' : 'inactiva';
         const newPassword = document.getElementById('editPassword').value;
         const newCategory = document.getElementById('editCategory').value;
+        const newNotes = document.getElementById('editNotes').value.trim();
         const inactiveUntilInput = document.getElementById('viewInactiveUntil');
         const inactiveUntilValue = inactiveUntilInput ? inactiveUntilInput.value : null;
 
@@ -1470,6 +1640,10 @@ class VaultMail {
         // Update category
         account.category = newCategory;
 
+        // Update notes
+        account.notes = newNotes;
+        account.updatedAt = new Date().toISOString();
+
         // Update filtered accounts if exists
         const filteredAccount = this.filteredAccounts.find(a => a.id === this.currentEditingId);
         if (filteredAccount) {
@@ -1479,6 +1653,8 @@ class VaultMail {
                 filteredAccount.password = newPassword;
             }
             filteredAccount.category = newCategory;
+            filteredAccount.notes = newNotes;
+            filteredAccount.updatedAt = account.updatedAt;
         }
 
         this.saveAccounts();
@@ -1588,14 +1764,28 @@ class VaultMail {
 
     copyToClipboard(text, button) {
         navigator.clipboard.writeText(text).then(() => {
+            // Cambiar icono temporalmente
             const originalIcon = button.innerHTML;
-            button.innerHTML = '<i class="bi bi-check"></i>';
-            this.showNotification('Copiado al portapapeles');
+            button.innerHTML = '<i class="bi bi-check-circle"></i>';
+            button.style.color = 'var(--success-color)';
+            
+            // Mostrar notificación con animación
+            this.showNotification('✓ Copiado al portapapeles', 'success', 1500);
+            
+            // Restaurar estado original después de 2 segundos
             setTimeout(() => {
                 button.innerHTML = originalIcon;
+                button.style.color = '';
             }, 2000);
         }).catch(err => {
-            this.showNotification('Error al copiar', 'error');
+            button.innerHTML = '<i class="bi bi-exclamation-circle"></i>';
+            button.style.color = 'var(--error-color)';
+            this.showNotification('❌ Error al copiar al portapapeles', 'error', 1500);
+            setTimeout(() => {
+                const originalIcon = button.innerHTML;
+                button.innerHTML = originalIcon;
+                button.style.color = '';
+            }, 2000);
         });
     }
 
@@ -1663,7 +1853,7 @@ class VaultMail {
         }
     }
 
-    showNotification(message, type = 'success') {
+    showNotification(message, type = 'success', duration = 3000) {
         const notification = document.createElement('div');
         const bgColor = type === 'error' ? '#ef4444' : '#10b981';
         notification.style.cssText = `
@@ -1685,7 +1875,7 @@ class VaultMail {
         setTimeout(() => {
             notification.style.animation = 'slideOutRight 0.3s ease-out';
             setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        }, duration);
     }
 
     toggleFavorite(accountId, btn) {
@@ -1710,6 +1900,63 @@ class VaultMail {
         this.showNotification(account.isFavorite ? 'Agregado a favoritos' : 'Quitado de favoritos');
     }
 
+    addTagToAccount(accountId, tag) {
+        const id = parseInt(accountId, 10);
+        const account = this.accounts.find(a => a.id === id);
+        if (!account) return;
+
+        tag = tag.trim().toLowerCase();
+        
+        // Verificar que la etiqueta no esté vacía
+        if (!tag) {
+            this.showNotification('La etiqueta no puede estar vacía', 'error');
+            return;
+        }
+
+        // Verificar límite de caracteres (máximo 30)
+        if (tag.length > 30) {
+            this.showNotification('La etiqueta debe tener máximo 30 caracteres', 'warning');
+            return;
+        }
+
+        // Verificar que la etiqueta no exista ya
+        if (account.tags && account.tags.includes(tag)) {
+            this.showNotification('La etiqueta ya existe', 'error');
+            return;
+        }
+
+        // Verificar límite de 3 etiquetas máximo por cuenta
+        if (!account.tags) {
+            account.tags = [];
+        }
+        
+        if (account.tags.length >= 3) {
+            this.showNotification('Máximo 3 etiquetas permitidas por cuenta', 'warning');
+            return;
+        }
+
+        account.tags.push(tag);
+        account.updatedAt = new Date().toISOString();
+        this.saveAccounts();
+        this.renderAccounts();
+        this.showNotification(`Etiqueta "${tag}" agregada`);
+    }
+
+    removeTagFromAccount(accountId, tag) {
+        const id = parseInt(accountId, 10);
+        const account = this.accounts.find(a => a.id === id);
+        if (!account || !account.tags) return;
+
+        const index = account.tags.indexOf(tag);
+        if (index > -1) {
+            account.tags.splice(index, 1);
+            account.updatedAt = new Date().toISOString();
+            this.saveAccounts();
+            this.renderAccounts();
+            this.showNotification(`Etiqueta "${tag}" eliminada`);
+        }
+    }
+
     openGmail(email) {
         // Google's account selector URL that opens Gmail for the specified email
         const gmailUrl = `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(email)}`;
@@ -1717,6 +1964,56 @@ class VaultMail {
     }
 
     exportAccounts() {
+        if (this.accounts.length === 0) {
+            this.showNotification('No hay cuentas para exportar', 'error');
+            return;
+        }
+
+        // Crear un modal para elegir formato
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'exportModal';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Selecciona formato de exportación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Elige el formato en el que deseas exportar tus cuentas:</p>
+                        <div class="d-grid gap-3">
+                            <button class="btn btn-primary export-pdf-btn">
+                                <i class="bi bi-file-pdf"></i> Exportar a PDF
+                            </button>
+                            <button class="btn btn-secondary export-json-btn">
+                                <i class="bi bi-file-earmark-code"></i> Exportar a JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+
+        modal.querySelector('.export-pdf-btn').addEventListener('click', () => {
+            bsModal.hide();
+            this.exportAccountsToPDF();
+            modal.remove();
+        });
+
+        modal.querySelector('.export-json-btn').addEventListener('click', () => {
+            bsModal.hide();
+            this.exportAccountsToJSON();
+            modal.remove();
+        });
+
+        bsModal.show();
+    }
+
+    exportAccountsToPDF() {
         if (this.accounts.length === 0) {
             this.showNotification('No hay cuentas para exportar', 'error');
             return;
@@ -1799,7 +2096,20 @@ class VaultMail {
                 yPosition += 5;
                 
                 doc.text(`Estado: ${account.status === 'activa' ? 'En uso' : 'En desuso'}`, margin + 5, yPosition);
-                yPosition += 7;
+                yPosition += 5;
+                
+                if (account.inactiveUntil) {
+                    const inactiveDate = new Date(account.inactiveUntil).toLocaleDateString('es-ES');
+                    doc.text(`Vuelve a estar en uso: ${inactiveDate}`, margin + 5, yPosition);
+                    yPosition += 5;
+                }
+                
+                if (account.tags && account.tags.length > 0) {
+                    doc.text(`Etiquetas: ${account.tags.join(', ')}`, margin + 5, yPosition);
+                    yPosition += 5;
+                }
+                
+                yPosition += 2;
                 
                 // Línea separadora entre cuentas
                 doc.setDrawColor(220, 220, 220);
@@ -1829,6 +2139,47 @@ class VaultMail {
         } catch (error) {
             console.error('Error al exportar:', error);
             this.showNotification('Error al exportar a PDF: ' + error.message, 'error');
+        }
+    }
+
+    exportAccountsToJSON() {
+        if (this.accounts.length === 0) {
+            this.showNotification('No hay cuentas para exportar', 'error');
+            return;
+        }
+
+        try {
+            // Crear un JSON con todas las cuentas incluyendo etiquetas
+            const dataToExport = this.accounts.map(account => ({
+                id: account.id,
+                username: account.username || null,
+                email: account.email || null,
+                password: account.password,
+                notes: account.notes || '',
+                category: account.category,
+                status: account.status || 'activa',
+                inactiveUntil: account.inactiveUntil || null,
+                isFavorite: account.isFavorite || false,
+                isArchived: account.isArchived || false,
+                tags: account.tags || [],
+                createdAt: account.createdAt || new Date().toISOString()
+            }));
+
+            const jsonString = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `vaultmail-backup-${new Date().getTime()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            this.showNotification('Cuentas exportadas a JSON exitosamente');
+        } catch (error) {
+            console.error('Error al exportar JSON:', error);
+            this.showNotification('Error al exportar a JSON: ' + error.message, 'error');
         }
     }
 
@@ -1927,8 +2278,10 @@ class VaultMail {
             if (!existingIds.has(importedAccount.id)) {
                 this.accounts.push({
                     ...importedAccount,
+                    inactiveUntil: importedAccount.inactiveUntil || null,
                     isFavorite: importedAccount.isFavorite || false,
-                    isArchived: importedAccount.isArchived || false
+                    isArchived: importedAccount.isArchived || false,
+                    tags: importedAccount.tags || []
                 });
                 importedCount++;
             }
@@ -1954,9 +2307,29 @@ class VaultMail {
             const passwordMatch = accountText.match(/Contraseña:\s*(.+?)(?:\n|Notas:|Categoría:|$)/);
             const notesMatch = accountText.match(/Notas:\s*(.+?)(?:\n|Categoría:|$)/);
             const categoryMatch = accountText.match(/Categoría:\s*(.+?)(?:\n|Estado:|$)/);
-            const statusMatch = accountText.match(/Estado:\s*(.+?)(?:\n|$)/);
+            const statusMatch = accountText.match(/Estado:\s*(.+?)(?:\n|Vuelve a estar|Etiquetas:|$)/);
+            const inactiveUntilMatch = accountText.match(/Vuelve a estar en uso:\s*(.+?)(?:\n|Etiquetas:|$)/);
+            const tagsMatch = accountText.match(/Etiquetas:\s*(.+?)(?:\n|$)/);
 
             if (passwordMatch) {
+                let inactiveUntil = null;
+                
+                // Intentar parsear la fecha de inactiveUntil
+                if (inactiveUntilMatch) {
+                    const dateStr = inactiveUntilMatch[1].trim();
+                    const parsedDate = new Date(dateStr);
+                    // Validar que la fecha sea válida
+                    if (!isNaN(parsedDate.getTime())) {
+                        inactiveUntil = parsedDate.toISOString().split('T')[0];
+                    }
+                }
+                
+                // Parsear etiquetas
+                let tags = [];
+                if (tagsMatch) {
+                    tags = tagsMatch[1].split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+                }
+                
                 const newAccount = {
                     id: Date.now() + Math.random(),
                     username: usernameMatch ? usernameMatch[1].trim() : null,
@@ -1965,10 +2338,11 @@ class VaultMail {
                     notes: notesMatch ? notesMatch[1].trim() : '',
                     category: 'personal',
                     status: statusMatch && statusMatch[1].includes('En desuso') ? 'inactiva' : 'activa',
-                    inactiveUntil: null,
+                    inactiveUntil: inactiveUntil,
                     createdAt: new Date().toISOString(),
                     isFavorite: false,
-                    isArchived: false
+                    isArchived: false,
+                    tags: tags
                 };
                 
                 // Mapear categoría si es posible
@@ -2165,18 +2539,23 @@ class VaultMail {
         document.addEventListener('touchend', (e) => {
             this.touchEndX = e.changedTouches[0].screenX;
             this.touchEndY = e.changedTouches[0].screenY;
-            this.handleSwipe();
+            this.handleSwipe(e);
         }, false);
     }
 
-    handleSwipe() {
+    handleSwipe(e) {
+        // Don't open sidebar if in table view mode (to avoid conflicts with horizontal scrolling)
+        if (this.viewMode === 'table') {
+            return;
+        }
+
         const minSwipeDistance = 50; // Minimum pixels for a swipe to be detected
         const maxVerticalDistance = 100; // Maximum vertical movement allowed for horizontal swipe
         
         const horizontalDistance = this.touchEndX - this.touchStartX;
         const verticalDistance = Math.abs(this.touchEndY - this.touchStartY);
 
-        // Only consider it a swipe if vertical movement is minimal (horizontal swipe)
+        // If primarily vertical movement, ignore (could be scrolling content)
         if (verticalDistance > maxVerticalDistance) {
             return;
         }
@@ -2389,35 +2768,22 @@ class VaultMail {
     }
 
     initSessionNotification() {
-        // Check if notification should be shown
-        const notificationDismissedTime = localStorage.getItem('vaultmail_notification_dismissed_time');
-        const now = Date.now();
-        
-        // Check if 24 hours have passed since dismissal
-        if (notificationDismissedTime && (now - parseInt(notificationDismissedTime)) < 24 * 60 * 60 * 1000) {
-            // Don't show notification yet
-            return;
+        // Get login time from localStorage
+        let loginTime = localStorage.getItem('vaultmail_login_time');
+        if (!loginTime) {
+            // Si no hay tiempo de login, usar la hora actual
+            loginTime = Date.now().toString();
+            localStorage.setItem('vaultmail_login_time', loginTime);
         }
-        
-        // Get or create session start time
-        let sessionStartTime = sessionStorage.getItem('vaultmail_session_start_time');
-        if (!sessionStartTime) {
-            sessionStartTime = Date.now().toString();
-            sessionStorage.setItem('vaultmail_session_start_time', sessionStartTime);
-        }
-        
+
         const notification = document.getElementById('sessionNotification');
         const sessionTimeElement = document.getElementById('sessionTime');
         const closeBtn = document.getElementById('closeSessionNotification');
-        
-        // Show notification with animation
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 500);
+        const closeXBtn = document.getElementById('closeSessionNotificationBtn');
         
         // Update session time periodically
         const updateSessionTime = () => {
-            const elapsed = Date.now() - parseInt(sessionStartTime);
+            const elapsed = Date.now() - parseInt(loginTime);
             const minutes = Math.floor(elapsed / 60000);
             const hours = Math.floor(minutes / 60);
             
@@ -2428,35 +2794,404 @@ class VaultMail {
                 sessionTimeElement.textContent = `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
             }
         };
+
+        // Check if notification should be shown
+        const checkAndShowNotification = () => {
+            const notificationDismissedTime = localStorage.getItem('vaultmail_notification_dismissed_time');
+            const now = Date.now();
+            const elapsedSinceLogin = now - parseInt(loginTime);
+            const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+            
+            // Check if notification was dismissed less than 24 hours ago
+            if (notificationDismissedTime && (now - parseInt(notificationDismissedTime)) < TWENTY_FOUR_HOURS) {
+                // Don't show notification yet
+                return;
+            }
+            
+            // Check if 24 hours or more have passed since login
+            if (elapsedSinceLogin >= TWENTY_FOUR_HOURS) {
+                // Show notification with animation
+                if (!notification.classList.contains('show')) {
+                    notification.classList.add('show');
+                    
+                    // Start updating session time every second
+                    if (!this.sessionTimeInterval) {
+                        updateSessionTime();
+                        this.sessionTimeInterval = setInterval(updateSessionTime, 1000);
+                    }
+                    
+                    // Setup close button handlers only once
+                    if (closeXBtn && !closeXBtn.dataset.listenerAdded) {
+                        closeXBtn.addEventListener('click', () => {
+                            notification.classList.remove('show');
+                            // Clear interval
+                            if (this.sessionTimeInterval) {
+                                clearInterval(this.sessionTimeInterval);
+                                this.sessionTimeInterval = null;
+                            }
+                        });
+                        closeXBtn.dataset.listenerAdded = 'true';
+                    }
+                    
+                    if (closeBtn && !closeBtn.dataset.listenerAdded) {
+                        closeBtn.addEventListener('click', () => {
+                            notification.classList.remove('show');
+                            // Save dismissal time for 24 hours
+                            localStorage.setItem('vaultmail_notification_dismissed_time', Date.now().toString());
+                            // Clear interval
+                            if (this.sessionTimeInterval) {
+                                clearInterval(this.sessionTimeInterval);
+                                this.sessionTimeInterval = null;
+                            }
+                        });
+                        closeBtn.dataset.listenerAdded = 'true';
+                    }
+                }
+            }
+        };
+
+        // Initial check
+        checkAndShowNotification();
         
-        // Initial update
-        updateSessionTime();
-        
-        // Update every minute
-        this.sessionTimeInterval = setInterval(updateSessionTime, 60000);
-        
-        // Close X button handler - hides notification temporarily
-        const closeXBtn = document.getElementById('closeSessionNotificationBtn');
-        if (closeXBtn) {
-            closeXBtn.addEventListener('click', () => {
-                notification.classList.remove('show');
-                // Clear interval
-                if (this.sessionTimeInterval) {
-                    clearInterval(this.sessionTimeInterval);
+        // Check every minute if 24 hours have passed
+        this.sessionNotificationCheckInterval = setInterval(checkAndShowNotification, 60000);
+    }
+
+    // ========== NUEVAS FUNCIONALIDADES ==========
+
+    // Generador de Contraseñas
+    generatePassword(options = {}) {
+        const {
+            length = 16,
+            uppercase = true,
+            lowercase = true,
+            numbers = true,
+            symbols = true
+        } = options;
+
+        let chars = '';
+        let password = '';
+
+        if (uppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        if (lowercase) chars += 'abcdefghijklmnopqrstuvwxyz';
+        if (numbers) chars += '0123456789';
+        if (symbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+        if (!chars) return '';
+
+        for (let i = 0; i < length; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        return password;
+    }
+
+    calculatePasswordStrength(password) {
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+        if (strength <= 2) return { level: 'weak', label: 'Débil', color: 'var(--error-color)', percent: 33 };
+        if (strength <= 3) return { level: 'fair', label: 'Regular', color: 'var(--warning-color)', percent: 66 };
+        return { level: 'good', label: 'Fuerte', color: 'var(--success-color)', percent: 100 };
+    }
+
+    setupPasswordGeneratorModal() {
+        const openBtn = document.getElementById('openGeneratorBtn');
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('togglePasswordVisibility');
+
+        if (!openBtn) return;
+
+        // Generar contraseña al hacer clic en el botón
+        openBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Usar valores por defecto para generar una contraseña segura
+            const password = this.generatePassword({
+                length: 16,
+                uppercase: true,
+                lowercase: true,
+                numbers: true,
+                symbols: true
+            });
+            passwordInput.value = password;
+            this.updatePasswordStrengthUI(password);
+        });
+
+        // Toggle para mostrar/ocultar contraseña
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const icon = toggleBtn.querySelector('i');
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
                 }
             });
         }
-        
-        // Close button handler - hides for 24 hours
-        closeBtn.addEventListener('click', () => {
-            notification.classList.remove('show');
-            // Save dismissal time for 24 hours
-            localStorage.setItem('vaultmail_notification_dismissed_time', Date.now().toString());
-            // Clear interval
-            if (this.sessionTimeInterval) {
-                clearInterval(this.sessionTimeInterval);
+    }
+
+    generateNewPassword() {
+        const uppercase = document.getElementById('genMayusculas')?.checked || false;
+        const lowercase = document.getElementById('genMinusculas')?.checked || false;
+        const numbers = document.getElementById('genNumeros')?.checked || false;
+        const symbols = document.getElementById('genSimbolos')?.checked || false;
+        const length = parseInt(document.getElementById('passwordLength')?.value || '16');
+
+        const password = this.generatePassword({
+            length,
+            uppercase,
+            lowercase,
+            numbers,
+            symbols
+        });
+
+        const field = document.getElementById('generatedPassword');
+        if (field) field.value = password;
+    }
+
+    // Sistema de Etiquetas
+    setupTags() {
+        const addTagBtn = document.getElementById('addTagBtn');
+        const tagInput = document.getElementById('tagInput');
+
+        if (!addTagBtn || !tagInput) return;
+
+        addTagBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.addTag(tagInput.value);
+            tagInput.value = '';
+        });
+
+        tagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.addTag(tagInput.value);
+                tagInput.value = '';
             }
         });
+    }
+
+    addTag(tagText) {
+        if (!tagText.trim()) return;
+
+        const container = document.getElementById('tagsContainer');
+        if (!container) return;
+
+        // Verificar límite de etiquetas (máximo 3)
+        const existingTags = container.querySelectorAll('.tag-badge');
+        if (existingTags.length >= 3) {
+            this.showNotification('Máximo 3 etiquetas permitidas por cuenta', 'warning');
+            return;
+        }
+
+        // Limitar a 30 caracteres
+        const trimmedText = tagText.trim();
+        if (trimmedText.length > 30) {
+            this.showNotification('La etiqueta debe tener máximo 30 caracteres', 'warning');
+            return;
+        }
+
+        const tagBadge = document.createElement('div');
+        tagBadge.className = 'tag-badge';
+        tagBadge.innerHTML = `
+            <span>${trimmedText}</span>
+            <button type="button"><i class="bi bi-x"></i></button>
+        `;
+
+        tagBadge.querySelector('button').addEventListener('click', () => {
+            tagBadge.remove();
+        });
+
+        container.appendChild(tagBadge);
+    }
+
+    getTags() {
+        const container = document.getElementById('tagsContainer');
+        if (!container) return [];
+
+        return Array.from(container.querySelectorAll('.tag-badge span')).map(span => span.textContent);
+    }
+
+    // Auditoría de Seguridad
+    openSecurityAudit() {
+        const modal = document.getElementById('securityAuditModal');
+        if (!modal) return;
+
+        this.updateSecurityAudit();
+        modal.classList.add('active');
+
+        const closeBtn = document.getElementById('closeSecurityModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            }, { once: true });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        }, { once: true });
+    }
+
+    updateSecurityAudit() {
+        const accounts = this.accounts;
+        const passwords = accounts.map(a => a.password);
+        const weakPasswords = accounts.filter(a => this.calculatePasswordStrength(a.password).level === 'weak');
+        const strongPasswords = accounts.filter(a => this.calculatePasswordStrength(a.password).level === 'good');
+        const duplicates = this.findDuplicatePasswords(passwords);
+
+        // Update stats
+        document.getElementById('securityTotalAccounts').textContent = accounts.length;
+        document.getElementById('securityStrongPasswords').textContent = strongPasswords.length;
+        document.getElementById('securityWeakPasswords').textContent = weakPasswords.length;
+        document.getElementById('securityDuplicates').textContent = Object.keys(duplicates).filter(key => duplicates[key].count > 1).length;
+
+        // Update recommendations
+        const recommendations = this.generateSecurityRecommendations(accounts, weakPasswords, duplicates);
+        const recList = document.getElementById('securityRecommendations');
+        if (recList) {
+            recList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
+        }
+
+        // Update weak passwords list
+        const weakList = document.getElementById('weakPasswordsList');
+        if (weakList) {
+            if (weakPasswords.length === 0) {
+                weakList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">¡Todas tus contraseñas son fuertes!</p>';
+            } else {
+                weakList.innerHTML = weakPasswords.map(acc => `
+                    <div class="weak-password-item">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div class="weak-password-info">
+                            <div class="weak-password-email">${acc.email || acc.username || 'Sin nombre'}</div>
+                            <div class="weak-password-reason">${acc.category} - Menos de 12 caracteres o sin variedad</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Update duplicates list
+        const dupList = document.getElementById('duplicatePasswordsList');
+        if (dupList) {
+            const dupAccounts = [];
+            for (let password in duplicates) {
+                if (duplicates[password].count > 1) {
+                    dupAccounts.push(...duplicates[password].accounts);
+                }
+            }
+
+            if (dupAccounts.length === 0) {
+                dupList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No hay contraseñas duplicadas</p>';
+            } else {
+                dupList.innerHTML = dupAccounts.map(acc => `
+                    <div class="duplicate-password-item">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <div class="duplicate-password-info">
+                            <div class="duplicate-password-email">${acc.email || acc.username || 'Sin nombre'}</div>
+                            <div class="duplicate-password-reason">${acc.category} - Contraseña usada en múltiples cuentas</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+
+    findDuplicatePasswords(passwords) {
+        const duplicates = {};
+        const passwordMap = {};
+
+        this.accounts.forEach(account => {
+            const pwd = account.password;
+            if (!passwordMap[pwd]) {
+                passwordMap[pwd] = [];
+            }
+            passwordMap[pwd].push(account);
+        });
+
+        for (let pwd in passwordMap) {
+            if (passwordMap[pwd].length > 1) {
+                duplicates[pwd] = {
+                    count: passwordMap[pwd].length,
+                    accounts: passwordMap[pwd]
+                };
+            }
+        }
+
+        return duplicates;
+    }
+
+    generateSecurityRecommendations(accounts, weakPasswords, duplicates) {
+        const recommendations = [];
+
+        if (accounts.length === 0) {
+            recommendations.push('Comienza a agregar cuentas para proteger tus contraseñas');
+        } else {
+            recommendations.push(`${accounts.length} cuenta${accounts.length > 1 ? 's' : ''} protegida${accounts.length > 1 ? 's' : ''}`);
+        }
+
+        if (weakPasswords.length > 0) {
+            recommendations.push(`⚠️ ${weakPasswords.length} contraseña${weakPasswords.length > 1 ? 's' : ''} débil${weakPasswords.length > 1 ? 's' : ''} - considera actualizarla${weakPasswords.length > 1 ? 's' : ''}`);
+        } else {
+            recommendations.push('✓ Todas tus contraseñas tienen buena fortaleza');
+        }
+
+        const dupCount = Object.keys(duplicates).filter(key => duplicates[key].count > 1).length;
+        if (dupCount > 0) {
+            recommendations.push(`⚠️ ${dupCount} contraseña${dupCount > 1 ? 's' : ''} se usa${dupCount > 1 ? 'n' : ''} en múltiples cuentas - usa contraseñas únicas`);
+        } else {
+            recommendations.push('✓ Todas tus contraseñas son únicas');
+        }
+
+        if (accounts.filter(a => a.status === 'activa').length > 0) {
+            recommendations.push('✓ Cuentas activas: todas en uso');
+        }
+
+        return recommendations;
+    }
+
+    // Mejorar actualización de contraseña en formulario
+    updatePasswordStrengthUI(password) {
+        const group = document.getElementById('passwordStrengthGroup');
+        if (!group) return;
+
+        if (!password) {
+            group.style.display = 'none';
+            return;
+        }
+
+        group.style.display = 'block';
+        const strength = this.calculatePasswordStrength(password);
+        const bar = document.getElementById('strengthBar');
+        const label = document.getElementById('strengthLabel');
+
+        if (bar && label) {
+            bar.style.background = strength.color;
+            bar.style.width = strength.percent + '%';
+            label.textContent = `Seguridad: ${strength.label}`;
+        }
+    }
+
+    setupPasswordStrengthIndicator() {
+        const passwordInput = document.getElementById('password');
+        if (!passwordInput) return;
+
+        passwordInput.addEventListener('input', (e) => {
+            this.updatePasswordStrengthUI(e.target.value);
+        });
+    }
+
+    setupSecurityAuditButton() {
+        // Este método se llamará desde setupEventListeners
+        // La funcionalidad real está en openSecurityAudit()
     }
 }
 

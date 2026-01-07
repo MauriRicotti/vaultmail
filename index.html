@@ -22,7 +22,7 @@
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="VaultMail" />
-    <meta name="theme-color" content="#7C3AED" />
+    <meta name="theme-color" content="#0f5d9a" />
 
     <!-- Bootstrap CSS -->
     <link
@@ -463,6 +463,16 @@
               <i class="bi bi-question-circle"></i>
               <span class="sidebar-label">Centro de Ayuda</span>
             </button>
+            <button
+              class="sidebar-nav-item"
+              id="sidebarSecurityBtn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Auditoría de seguridad"
+            >
+              <i class="bi bi-shield-check"></i>
+              <span class="sidebar-label">Seguridad</span>
+            </button>
           </nav>
           <div class="sidebar-actions-divider"></div>
           <button
@@ -724,18 +734,93 @@
           </div>
           <div class="form-group">
             <label for="password">Contraseña</label>
-            <input
-              type="password"
-              id="password"
-              required
-              placeholder="••••••••"
-            />
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <input
+                type="password"
+                id="password"
+                required
+                placeholder="••••••••"
+                style="flex: 1"
+              />
+              <button
+                type="button"
+                class="btn btn-icon-toggle"
+                id="togglePasswordVisibility"
+                style="
+                  background: none;
+                  border: 1px solid var(--border-color);
+                  color: var(--text-secondary);
+                  cursor: pointer;
+                  padding: 0.5rem;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 40px;
+                  height: 40px;
+                "
+                title="Mostrar/Ocultar contraseña"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="openGeneratorBtn"
+                style="
+                  padding: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 40px;
+                  height: 40px;
+                  gap: 0.5rem;
+                "
+              >
+                <i class="bi bi-shuffle"></i>
+              </button>
+            </div>
+          </div>
+          <div
+            class="form-group"
+            id="passwordStrengthGroup"
+            style="display: none"
+          >
+            <label>Fortaleza de Contraseña</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem">
+              <div
+                style="
+                  flex: 1;
+                  height: 8px;
+                  background: var(--border-color);
+                  border-radius: 4px;
+                  overflow: hidden;
+                "
+              >
+                <div
+                  id="strengthBar"
+                  style="
+                    height: 100%;
+                    width: 0%;
+                    background: var(--error-color);
+                    transition: width 0.3s;
+                  "
+                ></div>
+              </div>
+              <span
+                id="strengthLabel"
+                style="font-size: 0.875rem; min-width: 80px"
+              ></span>
+            </div>
           </div>
           <div class="form-group">
-            <label for="notes">Notas (opcional)</label>
+            <label for="notes"
+              >Notas <span style="color: var(--danger-color)">*</span></label
+            >
             <textarea
               id="notes"
-              placeholder="Agrega notas sobre esta cuenta..."
+              placeholder="Ej: Cuenta de trabajo creada en 2024, usar para correo corporativo"
+              required
             ></textarea>
           </div>
           <div class="form-group">
@@ -751,6 +836,38 @@
               <option value="personal">Personal</option>
               <option value="otros">Otros</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label
+              >Etiquetas (opcional) - Máximo 3 etiquetas (30 caracteres
+              c/u)</label
+            >
+            <div
+              id="tagsContainer"
+              style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
+              "
+            ></div>
+            <div id="tagInputContainer" style="display: flex; gap: 0.5rem">
+              <input
+                type="text"
+                id="tagInput"
+                placeholder="Agregar etiqueta (30 caracteres máx)..."
+                maxlength="30"
+                style="flex: 1"
+              />
+              <button
+                type="button"
+                id="addTagBtn"
+                class="btn btn-secondary"
+                style="padding: 0.5rem 1rem"
+              >
+                <i class="bi bi-tag"></i> Agregar
+              </button>
+            </div>
           </div>
           <div class="form-group form-group-checkbox">
             <label>
@@ -796,6 +913,147 @@
           <button type="button" class="btn btn-secondary" id="closeViewBtn">
             Cerrar
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para cambiar contraseña -->
+    <div class="modal fade" id="passwordGeneratorModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content change-password-modal-content">
+          <div class="modal-header change-password-header">
+            <h5 class="modal-title">Generador de Contraseñas</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body change-password-body">
+            <div class="generator-preview" style="margin-bottom: 1.5rem">
+              <label
+                style="
+                  display: block;
+                  font-size: 0.875rem;
+                  margin-bottom: 0.5rem;
+                  color: var(--text-secondary);
+                "
+                >Contraseña Generada</label
+              >
+              <div style="display: flex; gap: 0.5rem">
+                <input
+                  type="text"
+                  id="generatedPassword"
+                  readonly
+                  style="
+                    flex: 1;
+                    padding: 0.75rem;
+                    border: 1px solid var(--border-color);
+                    border-radius: 8px;
+                    background: var(--card-bg);
+                    color: var(--text-primary);
+                  "
+                />
+                <button
+                  type="button"
+                  id="copyGeneratedBtn"
+                  class="btn btn-primary"
+                  style="padding: 0.75rem 1rem"
+                >
+                  <i class="bi bi-copy"></i> Copiar
+                </button>
+              </div>
+            </div>
+
+            <div class="generator-options">
+              <h6 style="margin-bottom: 1rem; color: var(--text-secondary)">
+                Opciones
+              </h6>
+
+              <div style="margin-bottom: 1rem">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="genMayusculas" checked />
+                  <span>Incluir mayúsculas (A-Z)</span>
+                </label>
+              </div>
+
+              <div style="margin-bottom: 1rem">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="genMinusculas" checked />
+                  <span>Incluir minúsculas (a-z)</span>
+                </label>
+              </div>
+
+              <div style="margin-bottom: 1rem">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="genNumeros" checked />
+                  <span>Incluir números (0-9)</span>
+                </label>
+              </div>
+
+              <div style="margin-bottom: 1rem">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="genSimbolos" checked />
+                  <span>Incluir símbolos (!@#$%^&*)</span>
+                </label>
+              </div>
+
+              <div style="margin-bottom: 1rem">
+                <label
+                  style="
+                    display: block;
+                    font-size: 0.875rem;
+                    margin-bottom: 0.5rem;
+                  "
+                  >Longitud: <span id="lengthValue">16</span> caracteres</label
+                >
+                <input
+                  type="range"
+                  id="passwordLength"
+                  min="8"
+                  max="32"
+                  value="16"
+                  style="width: 100%"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer change-password-footer">
+            <button type="button" id="regenerateBtn" class="btn btn-secondary">
+              <i class="bi bi-arrow-repeat"></i> Generar Nuevo
+            </button>
+            <button type="button" id="useGeneratedBtn" class="btn btn-primary">
+              <i class="bi bi-check"></i> Usar Esta Contraseña
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1044,6 +1302,74 @@
             >
               <i class="bi bi-check"></i> Guardar de Todas Formas
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para auditoría de seguridad -->
+    <div class="modal" id="securityAuditModal">
+      <div class="modal-content security-audit-modal-content">
+        <div class="modal-header">
+          <h2>Auditoría de Seguridad</h2>
+          <button class="modal-close" id="closeSecurityModal">&times;</button>
+        </div>
+        <div class="security-audit-content">
+          <!-- Estadísticas Rápidas -->
+          <div class="security-stats-grid">
+            <div class="security-stat-card">
+              <div class="security-stat-value" id="securityTotalAccounts">
+                0
+              </div>
+              <div class="security-stat-label">Total de Cuentas</div>
+            </div>
+            <div class="security-stat-card">
+              <div
+                class="security-stat-value strong"
+                id="securityStrongPasswords"
+              >
+                0
+              </div>
+              <div class="security-stat-label">Contraseñas Fuertes</div>
+            </div>
+            <div class="security-stat-card">
+              <div class="security-stat-value weak" id="securityWeakPasswords">
+                0
+              </div>
+              <div class="security-stat-label">Contraseñas Débiles</div>
+            </div>
+            <div class="security-stat-card">
+              <div class="security-stat-value error" id="securityDuplicates">
+                0
+              </div>
+              <div class="security-stat-label">Duplicadas</div>
+            </div>
+          </div>
+
+          <div class="security-audit-main">
+            <!-- Panel Izquierdo -->
+            <div class="security-audit-panel">
+              <h3>⚠️ Recomendaciones</h3>
+              <ul id="securityRecommendations">
+                <li>Cargando recomendaciones...</li>
+              </ul>
+            </div>
+
+            <!-- Panel Derecho -->
+            <div class="security-audit-panel">
+              <h3>Contraseñas Débiles</h3>
+              <div id="weakPasswordsList">
+                <p class="empty-state">No hay contraseñas débiles</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel de Duplicados (debajo en móvil, a la derecha en PC) -->
+          <div class="security-audit-panel full-width-mobile">
+            <h3>Contraseñas Duplicadas</h3>
+            <div id="duplicatePasswordsList">
+              <p class="empty-state">No hay contraseñas duplicadas</p>
+            </div>
           </div>
         </div>
       </div>
