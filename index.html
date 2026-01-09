@@ -1538,16 +1538,22 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 VaultMail. Todos los derechos reservados.</p>
-          <p>
-            Creado por
-            <a
-              href="https://nexcore-gamma.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Nexcore</a
-            >
-          </p>
+          <div class="footer-bottom-left">
+            <p>&copy; 2026 VaultMail. Todos los derechos reservados.</p>
+            <p>
+              Creado por
+              <a
+                href="https://nexcore-gamma.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Nexcore</a
+              >
+            </p>
+          </div>
+          <button id="installAppBtn" class="btn btn-install-app d-none">
+            <i class="bi bi-download"></i>
+            Instalar app
+          </button>
         </div>
       </div>
     </footer>
@@ -1569,6 +1575,11 @@
                 registration
               );
 
+              // Verificar actualizaciones cada 10 segundos
+              setInterval(() => {
+                registration.update();
+              }, 10000);
+
               // Detectar actualizaciones disponibles
               registration.addEventListener("updatefound", () => {
                 const newWorker = registration.installing;
@@ -1578,9 +1589,10 @@
                     navigator.serviceWorker.controller
                   ) {
                     console.log(
-                      "[App] Nueva versión disponible. Actualizar..."
+                      "[App] Nueva versión disponible. Recargando..."
                     );
-                    // Aquí podrías mostrar una notificación al usuario
+                    // Recargar la página para obtener la nueva versión
+                    window.location.reload();
                   }
                 });
               });

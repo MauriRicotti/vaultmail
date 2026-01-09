@@ -1945,17 +1945,18 @@ class VaultMail {
             return;
         }
 
-        // Verificar que la etiqueta no exista ya
-        if (account.tags && account.tags.includes(tag)) {
+        // Verificar que la etiqueta no exista ya (comparar en minúsculas)
+        if (!account.tags) {
+            account.tags = [];
+        }
+        
+        const tagExists = account.tags.some(existingTag => existingTag.toLowerCase() === tag.toLowerCase());
+        if (tagExists) {
             this.showNotification('La etiqueta ya existe', 'error');
             return;
         }
 
         // Verificar límite de 3 etiquetas máximo por cuenta
-        if (!account.tags) {
-            account.tags = [];
-        }
-        
         if (account.tags.length >= 3) {
             this.showNotification('Máximo 3 etiquetas permitidas por cuenta', 'warning');
             return;
@@ -1973,13 +1974,15 @@ class VaultMail {
         const account = this.accounts.find(a => a.id === id);
         if (!account || !account.tags) return;
 
-        const index = account.tags.indexOf(tag);
+        // Buscar el índice comparando en minúsculas
+        const index = account.tags.findIndex(existingTag => existingTag.toLowerCase() === tag.toLowerCase());
         if (index > -1) {
+            const removedTag = account.tags[index];
             account.tags.splice(index, 1);
             account.updatedAt = new Date().toISOString();
             this.saveAccounts();
             this.renderAccounts();
-            this.showNotification(`Etiqueta "${tag}" eliminada`);
+            this.showNotification(`Etiqueta "${removedTag}" eliminada`);
         }
     }
 
@@ -3215,9 +3218,16 @@ class VaultMail {
         }
 
         // Limitar a 30 caracteres
-        const trimmedText = tagText.trim();
+        const trimmedText = tagText.trim().toLowerCase();
         if (trimmedText.length > 30) {
             this.showNotification('La etiqueta debe tener máximo 30 caracteres', 'warning');
+            return;
+        }
+
+        // Verificar que la etiqueta no exista ya
+        const existingTagTexts = Array.from(container.querySelectorAll('.tag-badge span')).map(span => span.textContent.toLowerCase());
+        if (existingTagTexts.includes(trimmedText)) {
+            this.showNotification('La etiqueta ya existe', 'error');
             return;
         }
 
@@ -3277,6 +3287,40 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// PWA Install Prompt Handler
+let deferredPrompt;
+const installAppBtn = document.getElementById('installAppBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event for later use
+    deferredPrompt = e;
+    // Update UI to show the install button
+    installAppBtn?.classList.remove('d-none');
+});
+
+installAppBtn?.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        // Optionally, send analytics event with outcome
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We no longer need the prompt. Clear it up
+        deferredPrompt = null;
+        // Hide the install button
+        installAppBtn?.classList.add('d-none');
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('PWA was installed');
+    // Hide the install button
+    installAppBtn?.classList.add('d-none');
+});
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {

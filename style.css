@@ -2648,6 +2648,42 @@ body.light-mode .modal-content {
   margin: 0;
 }
 
+.footer-bottom-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-install-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-install-app:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 93, 154, 0.3);
+}
+
+.btn-install-app:active {
+  transform: translateY(0);
+}
+
+.btn-install-app i {
+  font-size: 1.1rem;
+}
+
 .footer-bottom a {
   color: var(--primary-color);
   text-decoration: none;
@@ -2712,6 +2748,22 @@ body.light-mode .modal-content {
     padding: 0 1rem;
   }
 
+  .footer-bottom {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+  }
+
+  .footer-bottom-left {
+    width: 100%;
+  }
+
+  .btn-install-app {
+    width: 100%;
+    justify-content: center;
+  }
   .empty-state {
     padding: 2rem 1rem;
   }

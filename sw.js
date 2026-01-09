@@ -1,5 +1,5 @@
 // Service Worker para VaultMail - Modo Offline
-const CACHE_NAME = 'vaultmail-v1';
+const CACHE_NAME = 'vaultmail-v2';
 const urlsToCache = [
   // Archivos principales
   '/',
@@ -56,53 +56,82 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estrategia de fetch: Network First, fallback a Cache
+// Estrategia de fetch: Network First para JS/CSS, fallback a Cache
 self.addEventListener('fetch', (event) => {
   // Ignorar solicitudes que no sean GET
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Estrategia: intentar red primero, fallback a caché
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Si obtenemos respuesta, cachearla
-        if (!response || response.status !== 200 || response.type === 'error') {
-          return response;
-        }
+  const url = new URL(event.request.url);
+  const isMainFile = url.pathname === '/main.js' || 
+                     url.pathname === '/style.css' || 
+                     url.pathname === '/index.html';
 
-        // Clonar la respuesta para cachearla
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
-        return response;
-      })
-      .catch(() => {
-        // Si falla la red, intentar caché
-        return caches.match(event.request).then((response) => {
-          if (response) {
+  if (isMainFile) {
+    // Para archivos principales, usar Network First con actualización de cache
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200 || response.type === 'error') {
             return response;
           }
 
-          // Mostrar página offline personalizada
-          if (event.request.destination === 'document') {
-            return caches.match('/index.html');
+          // Clonar la respuesta para cachearla
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+
+          return response;
+        })
+        .catch(() => {
+          // Si falla la red, intentar caché
+          return caches.match(event.request).then((response) => {
+            if (response) {
+              return response;
+            }
+
+            // Mostrar página offline personalizada
+            if (event.request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+
+            return new Response('No disponible offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain'
+              })
+            });
+          });
+        })
+    );
+  } else {
+    // Para otros recursos (CDN, assets), usar Cache First
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        if (response) {
+          return response;
+        }
+
+        return fetch(event.request).then((response) => {
+          if (!response || response.status !== 200 || response.type === 'error') {
+            return response;
           }
 
-          // Respuesta fallback genérica
-          return new Response('No disponible offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
           });
+
+          return response;
+        }).catch(() => {
+          return caches.match(event.request);
         });
       })
-  );
+    );
+  }
 });
 
 // Escuchar mensajes del cliente
